@@ -27,12 +27,6 @@ jobs:
           cache: npm
           cache-dependency-path: huanlegou-app/package-lock.json
 
-      - name: Setup EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
       - name: Install dependencies
         run: npm ci
 
@@ -40,11 +34,13 @@ jobs:
         run: npm run sync:web
 
       - name: Build APK on EAS
-        run: eas build --platform android --profile preview --non-interactive --wait
+        run: npx eas-cli@latest build --platform android --profile preview --non-interactive --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Print latest build
         if: success()
         run: |
           echo "## Android APK build finished" >> "$GITHUB_STEP_SUMMARY"
           echo "Download from [Expo Builds](https://expo.dev/accounts/yuanlingqi/projects/huanlegou/builds)" >> "$GITHUB_STEP_SUMMARY"
-          eas build:list --platform android --limit 1 --non-interactive >> "$GITHUB_STEP_SUMMARY" || true
+          npx eas-cli@latest build:list --platform android --limit 1 --non-interactive >> "$GITHUB_STEP_SUMMARY" || true
