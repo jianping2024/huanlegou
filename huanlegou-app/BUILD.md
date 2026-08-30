@@ -2,88 +2,71 @@
 
 ```
 merchant-link/
-├── huanlegou-prototype/   # HTML 原型（改 UI 在这里）
-└── huanlegou-app/         # Expo 壳（Android / iOS 共用）
-    ├── web/               # sync 产物，构建时打进原生包
-    ├── src/
-    │   ├── WebApp.tsx
-    │   └── config/localWeb.ts   # 各平台本地 HTML 路径
-    └── eas.json           # preview = 内测安装包
+├── huanlegou-prototype/   # HTML 原型 → 部署到 Vercel 等静态服务器
+└── huanlegou-app/         # Expo 壳，WebView 打开远程 HTTPS 页面
+    └── src/config/appWebUrl.ts
 ```
 
-## 一次性准备
+## 架构
+
+App **不再打包本地 HTML**，改为加载远程页面：
+
+```
+huanlegou-prototype  ──deploy──▶  https://xxx.vercel.app
+                                        ▲
+huanlegou-app (WebView)  ───────────────┘
+```
+
+改 UI 只需重新部署页面，**通常不用重打 APK**。
+
+---
+
+## 1. 部署页面服务器（首次）
+
+见 [huanlegou-prototype/DEPLOY.md](../huanlegou-prototype/DEPLOY.md)
+
+Vercel Import 仓库，Root Directory 选 **`huanlegou-prototype`**。
+
+---
+
+## 2. 配置 App 里的页面地址
+
+在 `eas.json` → `preview.env` 改：
+
+```json
+"EXPO_PUBLIC_WEB_APP_URL": "https://你的域名.vercel.app"
+```
+
+---
+
+## 3. 打 Android APK
 
 ```bash
 cd huanlegou-app
 export EXPO_TOKEN="你的token"
-npx eas-cli@latest whoami   # 应显示 yuanlingqi
-```
-
-Token：https://expo.dev/settings/access-tokens
-
----
-
-## Android 内测 APK
-
-```bash
-cd huanlegou-app
 npm run build:android
 ```
 
-完成后在 https://expo.dev/accounts/yuanlingqi/projects/huanlegou/builds 下载 `.apk`，用文件管理器安装。
+下载：https://expo.dev/accounts/yuanlingqi/projects/huanlegou/builds
 
 ---
 
-## iOS 内测 IPA
+## iOS 内测
 
-**前提：** Apple Developer 账号（$99/年）。首次构建时 EAS 会引导配置证书。
-
-### 1. 注册测试设备（Ad Hoc 必须）
-
-每台要安装的 iPhone 先登记 UDID：
-
-```bash
-cd huanlegou-app
-npm run device:register
-```
-
-终端会给出链接/二维码，用 **iPhone Safari** 打开并按提示安装描述文件。
-
-### 2. 云端打 IPA
-
-```bash
-cd huanlegou-app
-npm run build:ios
-```
-
-### 3. 安装到 iPhone
-
-1. 构建完成后，用 **iPhone Safari** 打开 Expo 构建页上的安装链接  
-2. 按提示安装描述文件 / 应用  
-3. **设置 → 通用 → VPN 与设备管理** 信任开发者证书  
-
-> iOS 不能像 Android 那样随便传 apk 文件；设备必须先 `device:register`，且只能装在该次构建包含的设备上。
+需要 Apple Developer（$99/年）。先 `npm run device:register`，再 `npm run build:ios`。
 
 ---
 
-## 更新原型后重新打包
+## 本地调试
 
 ```bash
-# 1. 改 huanlegou-prototype/
-# 2. 同步并构建
+# 页面
+cd huanlegou-prototype && npx serve . -p 4173
+
+# App（可选，指向本地局域网 IP）
 cd huanlegou-app
-npm run sync:web
-npm run build:android   # 或 build:ios
+EXPO_PUBLIC_WEB_APP_URL=http://192.168.x.x:4173 npm start
 ```
-
----
-
-## GitHub Actions
-
-- push `main` → 自动打 **Android**
-- 手动 Run workflow 可选 **ios** 或 **android**
-
-仓库 Secret：`EXPO_TOKEN`
 
 ---
 
@@ -91,8 +74,6 @@ npm run build:android   # 或 build:ios
 
 | 问题 | 处理 |
 |------|------|
-| `Not logged in` | 检查 `EXPO_TOKEN` |
-| iOS 安装灰色 / 无法安装 | 先 `npm run device:register`，再重新 `build:ios` |
-| iOS 提示未受信任 | 设置 → 通用 → VPN 与设备管理 → 信任 |
-| Android 安装无反应 | 文件管理器打开 apk，勿用微信内置浏览器 |
-| 白屏 / 闪退 | 确认装的是最新构建（含 android_asset / iOS web  bundle） |
+| 白屏 / 加载失败 | 确认 Vercel 已部署且手机能访问该 HTTPS 地址 |
+| 改了 UI 没变化 | 重新 deploy 页面；App 有缓存时可杀进程重开 |
+| Android 仍闪退 | 装 v1.0.3+，已改为 HTTPS 远程加载 |

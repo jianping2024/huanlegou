@@ -10,6 +10,9 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_WEB_APP_URL": "https://huanlegou.vercel.app"
+      },
       "android": {
         "buildType": "apk"
       },

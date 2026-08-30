@@ -39,9 +39,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Sync web prototype
-        run: npm run sync:web
-
       - name: Resolve platform
         id: platform
         run: |

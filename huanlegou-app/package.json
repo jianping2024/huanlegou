@@ -5,8 +5,7 @@
   "dependencies": {
     "expo": "~57.0.18",
     "expo-asset": "~57.0.15",
-    "expo-custom-assets": "^1.5.0",
-    "expo-file-system": "~57.0.6",
+    "expo-constants": "~57.0.16",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",
@@ -20,12 +19,12 @@
   },
   "scripts": {
     "sync:web": "node scripts/sync-web-prototype.mjs",
-    "start": "npm run sync:web && expo start",
+    "start": "expo start",
     "android": "expo run:android",
-    "build:android": "npm run sync:web && npx eas-cli@latest build --platform android --profile preview --non-interactive",
-    "build:ios": "npm run sync:web && npx eas-cli@latest build --platform ios --profile preview --non-interactive",
+    "build:android": "npx eas-cli@latest build --platform android --profile preview --non-interactive",
+    "build:ios": "npx eas-cli@latest build --platform ios --profile preview --non-interactive",
     "device:register": "npx eas-cli@latest device:create",
-    "build:android:local": "npm run sync:web && eas build --platform android --profile preview --local"
+    "build:android:local": "eas build --platform android --profile preview --local"
   },
   "private": true
 }

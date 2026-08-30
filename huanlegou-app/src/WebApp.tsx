@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
-import { LOCAL_WEB_READ_ACCESS, LOCAL_WEB_URI } from './config/localWeb';
+import { APP_WEB_URL } from './config/appWebUrl';
 
 export default function WebApp() {
   const [error, setError] = useState<string | null>(null);
@@ -29,16 +29,16 @@ export default function WebApp() {
 
   const onWebViewError = useCallback((event: { nativeEvent: { description?: string } }) => {
     const detail = event.nativeEvent.description?.trim();
-    setError(detail ? `WebView 加载失败：${detail}` : 'WebView 加载失败');
+    setError(
+      detail
+        ? `页面加载失败：${detail}\n\n请检查网络，或确认页面服务器已部署：${APP_WEB_URL}`
+        : `页面加载失败，请检查网络连接`,
+    );
     setLoading(false);
   }, []);
 
   const onWebViewCrash = useCallback(() => {
-    setError(
-      Platform.OS === 'ios'
-        ? '页面加载异常，请完全关闭 App 后重试。'
-        : '页面进程异常退出。请完全关闭 App 后重试，或更新系统 WebView。',
-    );
+    setError('页面进程异常退出，请重试。');
     setLoading(false);
   }, []);
 
@@ -61,13 +61,9 @@ export default function WebApp() {
       )}
       <WebView
         ref={setWebView}
-        source={{ uri: LOCAL_WEB_URI }}
+        source={{ uri: APP_WEB_URL }}
         style={styles.webview}
-        originWhitelist={['*']}
-        allowingReadAccessToURL={LOCAL_WEB_READ_ACCESS}
-        allowFileAccess
-        allowFileAccessFromFileURLs
-        allowUniversalAccessFromFileURLs
+        originWhitelist={['https://*', 'http://*']}
         domStorageEnabled
         javaScriptEnabled
         cacheEnabled
