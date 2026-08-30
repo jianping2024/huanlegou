@@ -2,7 +2,7 @@
   "expo": {
     "name": "欢乐购",
     "slug": "huanlegou",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,6 +17,7 @@
     },
     "android": {
       "package": "com.huanlegou.app",
+      "permissions": ["INTERNET"],
       "adaptiveIcon": {
         "backgroundColor": "#FF5000",
         "foregroundImage": "./assets/android-icon-foreground.png",
