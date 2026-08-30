@@ -2,7 +2,7 @@
   "expo": {
     "name": "欢乐购",
     "slug": "huanlegou",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -30,7 +30,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-custom-assets",
+        {
+          "assetsPaths": ["./web"],
+          "preserveFolder": true
+        }
+      ]
     ],
     "extra": {
       "eas": {

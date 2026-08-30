@@ -33,6 +33,23 @@ cd huanlegou-app
 npm run build:android
 ```
 
+### GitHub Actions 自动打包
+
+推送 `main` 分支（或手动 Run workflow）会自动触发 EAS 构建。
+
+**一次性配置：** 在 GitHub 仓库 Settings → Secrets → Actions 添加 `EXPO_TOKEN`（与本地相同）。
+
+构建完成后到 https://expo.dev/accounts/yuanlingqi/projects/huanlegou/builds 下载 APK。
+
+---
+
+## 本地 / CLI 云端打 APK
+
+```bash
+cd huanlegou-app
+npm run build:android
+```
+
 等价于（`EAS_NO_VCS=1` 会把本地已 sync 的 `web/` 一并上传，云端没有 `huanlegou-prototype` 目录）：
 
 ```bash

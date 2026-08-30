@@ -1,90 +1,20 @@
-import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system/legacy';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import type { WebViewNavigation, WebViewSource } from 'react-native-webview/lib/WebViewTypes';
-import { WEB_ASSETS } from './webAssets';
+import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
 
-const BUNDLE_VERSION = '2';
-const WEB_DIR = `${FileSystem.documentDirectory ?? ''}huanlegou-web/`;
-const READY_FLAG = `${WEB_DIR}.ready-v${BUNDLE_VERSION}`;
-const BLANK_HTML = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body></body></html>';
-
-type PageContent = {
-  html: string;
-  baseUrl: string;
-};
-
-async function ensureDir(dir: string) {
-  const info = await FileSystem.getInfoAsync(dir);
-  if (!info.exists) {
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-  }
-}
-
-async function installWebBundle(): Promise<PageContent> {
-  if (!FileSystem.documentDirectory) {
-    throw new Error('无法访问本地存储');
-  }
-
-  const ready = await FileSystem.getInfoAsync(READY_FLAG);
-  if (!ready.exists) {
-    await ensureDir(WEB_DIR);
-
-    for (const [relPath, moduleId] of Object.entries(WEB_ASSETS)) {
-      const asset = Asset.fromModule(moduleId);
-      await asset.downloadAsync();
-      if (!asset.localUri) {
-        throw new Error(`Failed to load asset: ${relPath}`);
-      }
-
-      const dest = WEB_DIR + relPath;
-      const lastSlash = dest.lastIndexOf('/');
-      if (lastSlash > 0) {
-        await ensureDir(dest.slice(0, lastSlash));
-      }
-      await FileSystem.copyAsync({ from: asset.localUri, to: dest });
-    }
-
-    await FileSystem.writeAsStringAsync(READY_FLAG, 'ok');
-  }
-
-  const indexPath = `${WEB_DIR}index.html`;
-  const indexInfo = await FileSystem.getInfoAsync(indexPath);
-  if (!indexInfo.exists) {
-    throw new Error('页面文件缺失，请重新安装 App');
-  }
-
-  const html = await FileSystem.readAsStringAsync(indexPath);
-  return { html, baseUrl: WEB_DIR };
-}
+// 构建时由 expo-custom-assets 把 web/ 打进 APK 的 android_asset，这是 Android 官方支持的本地路径
+const LOCAL_WEB_URI = Platform.select({
+  android: 'file:///android_asset/web/index.html',
+  ios: 'web/index.html',
+  default: 'file:///android_asset/web/index.html',
+})!;
 
 export default function WebApp() {
-  const [page, setPage] = useState<PageContent | null>(null);
-  const [source, setSource] = useState<WebViewSource | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [webView, setWebView] = useState<WebView | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
-
-  useEffect(() => {
-    installWebBundle()
-      .then(setPage)
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
-  }, []);
-
-  useEffect(() => {
-    if (!page || source) return undefined;
-
-    if (Platform.OS === 'android') {
-      // Android（含魅族）：先挂载空页，等 WebView 就绪后再注入内容，避免 file:// 权限竞态导致闪退
-      setSource({ html: BLANK_HTML, baseUrl: page.baseUrl });
-      return undefined;
-    }
-
-    setSource({ html: page.html, baseUrl: page.baseUrl });
-    return undefined;
-  }, [page, source]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return undefined;
@@ -103,23 +33,15 @@ export default function WebApp() {
     setCanGoBack(nav.canGoBack);
   }, []);
 
-  const onWebViewLoadEnd = useCallback(() => {
-    if (!page || Platform.OS !== 'android') return;
-    setSource((current) => {
-      if (current && 'html' in current && current.html === page.html) {
-        return current;
-      }
-      return { html: page.html, baseUrl: page.baseUrl };
-    });
-  }, [page]);
-
   const onWebViewError = useCallback((event: { nativeEvent: { description?: string } }) => {
     const detail = event.nativeEvent.description?.trim();
     setError(detail ? `WebView 加载失败：${detail}` : 'WebView 加载失败');
+    setLoading(false);
   }, []);
 
   const onRenderProcessGone = useCallback(() => {
-    setError('页面进程异常退出。请完全关闭 App 后重试，或更新系统 WebView。');
+    setError('页面进程异常退出。请更新系统 WebView 后重试。');
+    setLoading(false);
   }, []);
 
   if (error) {
@@ -131,44 +53,53 @@ export default function WebApp() {
     );
   }
 
-  if (!page || !source) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#FF5000" />
-        <Text style={styles.loadingText}>正在加载欢乐购…</Text>
-      </View>
-    );
-  }
-
   return (
-    <WebView
-      ref={setWebView}
-      source={source}
-      style={styles.webview}
-      originWhitelist={['*']}
-      allowingReadAccessToURL={page.baseUrl}
-      allowFileAccess
-      allowFileAccessFromFileURLs
-      allowUniversalAccessFromFileURLs
-      domStorageEnabled
-      javaScriptEnabled
-      cacheEnabled
-      mixedContentMode="always"
-      setSupportMultipleWindows={false}
-      textZoom={100}
-      onNavigationStateChange={onNavChange}
-      onLoadEnd={onWebViewLoadEnd}
-      onError={onWebViewError}
-      onHttpError={onWebViewError}
-      onRenderProcessGone={onRenderProcessGone}
-    />
+    <View style={styles.container}>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#FF5000" />
+          <Text style={styles.loadingText}>正在加载欢乐购…</Text>
+        </View>
+      )}
+      <WebView
+        ref={setWebView}
+        source={{ uri: LOCAL_WEB_URI }}
+        style={styles.webview}
+        originWhitelist={['*']}
+        allowFileAccess
+        allowFileAccessFromFileURLs
+        allowUniversalAccessFromFileURLs
+        domStorageEnabled
+        javaScriptEnabled
+        cacheEnabled
+        mixedContentMode="always"
+        setSupportMultipleWindows={false}
+        textZoom={100}
+        onNavigationStateChange={onNavChange}
+        onLoadEnd={() => setLoading(false)}
+        onError={onWebViewError}
+        onHttpError={onWebViewError}
+        onRenderProcessGone={onRenderProcessGone}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
   webview: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    zIndex: 1,
   },
   center: {
     flex: 1,
