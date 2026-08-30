@@ -13,7 +13,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.huanlegou.app"
+      "bundleIdentifier": "com.huanlegou.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.huanlegou.app",

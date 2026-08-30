@@ -2,13 +2,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
-
-// 构建时由 expo-custom-assets 把 web/ 打进 APK 的 android_asset，这是 Android 官方支持的本地路径
-const LOCAL_WEB_URI = Platform.select({
-  android: 'file:///android_asset/web/index.html',
-  ios: 'web/index.html',
-  default: 'file:///android_asset/web/index.html',
-})!;
+import { LOCAL_WEB_READ_ACCESS, LOCAL_WEB_URI } from './config/localWeb';
 
 export default function WebApp() {
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +33,12 @@ export default function WebApp() {
     setLoading(false);
   }, []);
 
-  const onRenderProcessGone = useCallback(() => {
-    setError('页面进程异常退出。请更新系统 WebView 后重试。');
+  const onWebViewCrash = useCallback(() => {
+    setError(
+      Platform.OS === 'ios'
+        ? '页面加载异常，请完全关闭 App 后重试。'
+        : '页面进程异常退出。请完全关闭 App 后重试，或更新系统 WebView。',
+    );
     setLoading(false);
   }, []);
 
@@ -66,6 +64,7 @@ export default function WebApp() {
         source={{ uri: LOCAL_WEB_URI }}
         style={styles.webview}
         originWhitelist={['*']}
+        allowingReadAccessToURL={LOCAL_WEB_READ_ACCESS}
         allowFileAccess
         allowFileAccessFromFileURLs
         allowUniversalAccessFromFileURLs
@@ -79,7 +78,8 @@ export default function WebApp() {
         onLoadEnd={() => setLoading(false)}
         onError={onWebViewError}
         onHttpError={onWebViewError}
-        onRenderProcessGone={onRenderProcessGone}
+        onRenderProcessGone={onWebViewCrash}
+        onContentProcessDidTerminate={onWebViewCrash}
       />
     </View>
   );

@@ -22,7 +22,9 @@
     "sync:web": "node scripts/sync-web-prototype.mjs",
     "start": "npm run sync:web && expo start",
     "android": "expo run:android",
-    "build:android": "npm run sync:web && EAS_NO_VCS=1 npx eas-cli@latest build --platform android --profile preview",
+    "build:android": "npm run sync:web && npx eas-cli@latest build --platform android --profile preview --non-interactive",
+    "build:ios": "npm run sync:web && npx eas-cli@latest build --platform ios --profile preview --non-interactive",
+    "device:register": "npx eas-cli@latest device:create",
     "build:android:local": "npm run sync:web && eas build --platform android --profile preview --local"
   },
   "private": true

@@ -1,0 +1,64 @@
+name: Build mobile (EAS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Target platform
+        required: true
+        default: android
+        type: choice
+        options:
+          - android
+          - ios
+  push:
+    branches: [main]
+    paths:
+      - 'huanlegou-app/**'
+      - 'huanlegou-prototype/**'
+      - '.github/workflows/build-eas.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: huanlegou-app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: huanlegou-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync web prototype
+        run: npm run sync:web
+
+      - name: Resolve platform
+        id: platform
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.platform }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=android" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build on EAS
+        run: npx eas-cli@latest build --platform ${{ steps.platform.outputs.value }} --profile preview --non-interactive --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Print latest build
+        if: success()
+        run: |
+          echo "## EAS build finished (${{ steps.platform.outputs.value }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download from [Expo Builds](https://expo.dev/accounts/yuanlingqi/projects/huanlegou/builds)" >> "$GITHUB_STEP_SUMMARY"
+          npx eas-cli@latest build:list --platform ${{ steps.platform.outputs.value }} --limit 1 --non-interactive >> "$GITHUB_STEP_SUMMARY" || true
