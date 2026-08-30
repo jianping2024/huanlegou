@@ -12,22 +12,46 @@ const srcRoot = path.resolve(root, '../huanlegou-prototype');
 const webRoot = path.join(root, 'web');
 const outFile = path.join(root, 'src/webAssets.ts');
 
+const WEB_EXTENSIONS = new Set([
+  '.html',
+  '.css',
+  '.js',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.webp',
+  '.svg',
+  '.ico',
+  '.woff',
+  '.woff2',
+]);
+
+function shouldIncludeWebFile(name) {
+  if (name.startsWith('.')) return false;
+  return WEB_EXTENSIONS.has(path.extname(name).toLowerCase());
+}
+
 function copyDir(from, to) {
   fs.mkdirSync(to, { recursive: true });
   for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+    if (entry.name.startsWith('.')) continue;
     const src = path.join(from, entry.name);
     const dest = path.join(to, entry.name);
     if (entry.isDirectory()) copyDir(src, dest);
-    else fs.copyFileSync(src, dest);
+    else if (shouldIncludeWebFile(entry.name)) fs.copyFileSync(src, dest);
   }
 }
 
 function walkFiles(dir, base = dir) {
   const files = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('.')) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) files.push(...walkFiles(full, base));
-    else files.push(path.relative(base, full).split(path.sep).join('/'));
+    else if (shouldIncludeWebFile(entry.name)) {
+      files.push(path.relative(base, full).split(path.sep).join('/'));
+    }
   }
   return files.sort();
 }
