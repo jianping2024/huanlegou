@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "欢乐购",
+    "slug": "huanlegou",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF5000"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.huanlegou.app"
+    },
+    "android": {
+      "package": "com.huanlegou.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FF5000",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-asset"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "366e6c31-8c61-4b50-bffb-8340b5019b88"
+      }
+    },
+    "owner": "yuanlingqi"
+  }
+}

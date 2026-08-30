@@ -1,0 +1,26 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & local env（勿提交 EXPO_TOKEN 等）
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Logs & debug
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.*
+
+# Editor（按需保留 .vscode 可删掉下面两行）
+.idea/
+*.swp
+*.swo
+
+# Cursor / agent 本地缓存（若有）
+.cursor/
