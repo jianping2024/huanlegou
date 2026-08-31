@@ -4,13 +4,29 @@ App 壳通过 WebView 加载这里的 HTTPS 页面。
 
 ## 一键部署
 
-1. https://vercel.com/new → Import `jianping2024/huanlegou`
-2. **Framework Preset** 选 **Other**
-3. **Root Directory** 留空（仓库根目录已有 `vercel.json` 指向 `huanlegou-prototype`）
-   - 若仍 404：手动把 Root Directory 改成 **`huanlegou-prototype`**
-4. Deploy
+**方式 A（推荐，不用找 Root Directory）**
 
-部署成功后打开 `https://你的项目.vercel.app/index.html` 应能看到欢乐购首页。
+仓库根目录已有 `vercel.json`（`"rootDirectory": "huanlegou-prototype"`），push 后 Vercel 会自动重新部署。
+
+1. 确认 GitHub 已同步最新代码
+2. Vercel 项目 → **Deployments** → 最新一条 → **Redeploy**
+
+**方式 B（新建项目时）**
+
+1. https://vercel.com/new → Import `jianping2024/huanlegou`
+2. 在 Import 页面若出现 **Root Directory** → 点 **Edit** → 选 `huanlegou-prototype`
+3. Framework 选 **Other** → Deploy
+
+**方式 C（在 Settings 里改，新版 UI 路径）**
+
+```
+项目页 → 顶部 Settings
+→ 左侧 Build and Deployment
+→ 页面往下滚 → Root Directory
+→ 填 huanlegou-prototype → Save → Redeploy
+```
+
+找不到 Root Directory 时用 **方式 A** 即可。
 
 ## 404 排查
 
