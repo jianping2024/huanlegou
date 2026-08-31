@@ -21,8 +21,8 @@ export default function WebApp() {
 
   const injectedBeforeContentLoaded = useMemo(
     () =>
-      `(function(){var d=document.documentElement;d.classList.add('in-app-webview');d.style.setProperty('--safe-top','${insets.top}px');})();true;`,
-    [insets.top],
+      `(function(){var d=document.documentElement;d.classList.add('in-app-webview');d.style.setProperty('--safe-top','${insets.top}px');d.style.setProperty('--safe-bottom','${insets.bottom}px');})();true;`,
+    [insets.top, insets.bottom],
   );
 
   const clearLoadTimer = useCallback(() => {
@@ -116,12 +116,7 @@ export default function WebApp() {
 
   return (
     <View style={styles.root}>
-      <View
-        style={[
-          styles.webArea,
-          { paddingTop: insets.top, paddingBottom: insets.bottom },
-        ]}
-      >
+      <View style={[styles.webArea, { paddingTop: insets.top }]}>
         <WebView
           key={webViewKey}
           ref={setWebView}
