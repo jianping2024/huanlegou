@@ -1,13 +1,7 @@
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  BackHandler,
-  Linking,
-  Platform,
-  StatusBar as RNStatusBar,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, Linking, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
 import { APP_WEB_HOME } from './config/appWebUrl';
@@ -16,20 +10,20 @@ import ErrorScreen from './ui/ErrorScreen';
 
 const LOAD_TIMEOUT_MS = 25_000;
 
-/** Android WebView draws under the status bar unless we offset the content area. */
-function getAndroidTopInset(): number {
-  if (Platform.OS !== 'android') return 0;
-  return RNStatusBar.currentHeight ?? 0;
-}
-
 export default function WebApp() {
-  const topInset = getAndroidTopInset();
+  const insets = useSafeAreaInsets();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [webViewKey, setWebViewKey] = useState(0);
   const [webView, setWebView] = useState<WebView | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const injectedBeforeContentLoaded = useMemo(
+    () =>
+      `(function(){var d=document.documentElement;d.classList.add('in-app-webview');d.style.setProperty('--safe-top','${insets.top}px');})();true;`,
+    [insets.top],
+  );
 
   const clearLoadTimer = useCallback(() => {
     if (loadTimerRef.current) {
@@ -64,8 +58,6 @@ export default function WebApp() {
   }, [webViewKey, clearLoadTimer, failLoad]);
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return undefined;
-
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (canGoBack && webView) {
         webView.goBack();
@@ -109,7 +101,7 @@ export default function WebApp() {
 
   if (error) {
     return (
-      <View style={[styles.root, { paddingTop: topInset }]}>
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <ErrorScreen
           title="加载失败"
           message={error}
@@ -124,7 +116,12 @@ export default function WebApp() {
 
   return (
     <View style={styles.root}>
-      <View style={[styles.webArea, { marginTop: topInset }]}>
+      <View
+        style={[
+          styles.webArea,
+          { paddingTop: insets.top, paddingBottom: insets.bottom },
+        ]}
+      >
         <WebView
           key={webViewKey}
           ref={setWebView}
@@ -137,9 +134,7 @@ export default function WebApp() {
           mixedContentMode="always"
           setSupportMultipleWindows={false}
           textZoom={100}
-          injectedJavaScriptBeforeContentLoaded={
-            "document.documentElement.classList.add('in-app-webview');true;"
-          }
+          injectedJavaScriptBeforeContentLoaded={injectedBeforeContentLoaded}
           onNavigationStateChange={onNavChange}
           onLoadEnd={finishLoading}
           onError={onWebViewError}

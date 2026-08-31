@@ -1,6 +1,7 @@
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform, StatusBar as RNStatusBar, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import ErrorBoundary from './src/ErrorBoundary';
 import WebApp from './src/WebApp';
@@ -12,15 +13,18 @@ export default function App() {
     if (Platform.OS !== 'android') return;
     RNStatusBar.setBackgroundColor('#FF5000');
     RNStatusBar.setBarStyle('light-content');
+    RNStatusBar.setTranslucent(true);
   }, []);
 
   return (
-    <ErrorBoundary>
-      <View style={styles.root}>
-        <StatusBar style="light" />
-        <WebApp />
-      </View>
-    </ErrorBoundary>
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <View style={styles.root}>
+          <StatusBar style="light" />
+          <WebApp />
+        </View>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 
