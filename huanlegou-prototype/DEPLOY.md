@@ -1,17 +1,26 @@
 # 页面服务器部署（Vercel）
 
-App 壳通过 WebView 加载这里的 HTTPS 页面，不再打包本地 HTML。
+App 壳通过 WebView 加载这里的 HTTPS 页面。
 
 ## 一键部署
 
-1. 打开 https://vercel.com/new  
-2. Import 仓库 `jianping2024/huanlegou`  
-3. **Root Directory** 设为 `huanlegou-prototype`  
-4. Deploy  
+1. https://vercel.com/new → Import `jianping2024/huanlegou`
+2. **Framework Preset** 选 **Other**
+3. **Root Directory** 留空（仓库根目录已有 `vercel.json` 指向 `huanlegou-prototype`）
+   - 若仍 404：手动把 Root Directory 改成 **`huanlegou-prototype`**
+4. Deploy
 
-部署完成后得到地址，例如 `https://huanlegou-xxx.vercel.app`
+部署成功后打开 `https://你的项目.vercel.app/index.html` 应能看到欢乐购首页。
 
-## 告诉 App 用这个地址
+## 404 排查
+
+| 现象 | 处理 |
+|------|------|
+| 整站 404 | Root Directory 设为 `huanlegou-prototype`，然后 **Redeploy** |
+| 只有图片 404 | 确认 `assets/` 已 push 到 GitHub |
+| 预览 URL 404 | 用 Production 域名（Settings → Domains），不要用带 hash 的 preview 链 |
+
+## 配置 App
 
 在 `huanlegou-app/eas.json` 的 `preview.env` 里改：
 
