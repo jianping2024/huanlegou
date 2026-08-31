@@ -64,8 +64,14 @@
     this.swiper = new Swiper(root, {
       loop: true,
       speed: TRANSITION_MS,
+      effect: 'cube',
+      cubeEffect: {
+        slideShadows: true,
+        shadow: true,
+        shadowOffset: 24,
+        shadowScale: 0.92,
+      },
       grabCursor: true,
-      resistanceRatio: 0.85,
       touchStartPreventDefault: false,
       autoplay: {
         delay: AUTO_MS,

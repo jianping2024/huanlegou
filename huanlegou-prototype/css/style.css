@@ -382,6 +382,19 @@ body {
   overflow: hidden;
 }
 
+.banner-swiper-inner.swiper-cube {
+  perspective: 900px;
+}
+
+.banner-swiper-inner.swiper-cube .swiper-slide {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.banner-swiper-inner.swiper-cube .swiper-cube-shadow {
+  background: rgba(0, 0, 0, 0.35);
+}
+
 .banner-swiper.is-dragging {
   cursor: grabbing;
 }
