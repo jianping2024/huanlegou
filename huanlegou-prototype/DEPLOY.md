@@ -38,7 +38,7 @@ App 壳通过 WebView 加载这里的 HTTPS 页面。
 
 ## 配置 App
 
-默认值在 `huanlegou-app/src/config/constants.ts` 的 `DEFAULT_WEB_APP_URL`。
+默认值在 `huanlegou-app/config/defaults.js` 的 `DEFAULT_WEB_APP_URL`。
 
 其他环境打包装：
 

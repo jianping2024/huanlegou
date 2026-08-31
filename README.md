@@ -8,7 +8,7 @@ B2B 批发采购 App 静态演示：HTML 原型 + Expo Android/iOS 壳。
 merchant-link/
 ├── huanlegou-prototype/   # 移动端 HTML/CSS/JS 原型
 ├── huanlegou-app/         # Expo WebView 壳
-│   └── src/config/constants.ts   # 默认 URL、版本（唯一来源）
+│   └── config/defaults.js          # 默认 URL、版本（唯一来源）
 └── vercel.json
 ```
 

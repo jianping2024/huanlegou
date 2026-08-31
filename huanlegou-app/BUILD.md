@@ -4,7 +4,7 @@
 merchant-link/
 ├── huanlegou-prototype/   # HTML 原型 → 部署到 Vercel
 └── huanlegou-app/         # Expo 壳，WebView 加载远程 HTTPS
-    └── src/config/constants.ts   # 默认 URL、版本号（唯一来源）
+    └── config/defaults.js          # 默认 URL、版本号（唯一来源）
 ```
 
 ## 架构
@@ -21,7 +21,7 @@ huanlegou-app (WebView)  ───────────────┘
 
 ## 配置页面地址
 
-默认值在 `src/config/constants.ts` 的 `DEFAULT_WEB_APP_URL`。
+默认值在 `config/defaults.js` 的 `DEFAULT_WEB_APP_URL`。
 
 打其他环境包时：
 

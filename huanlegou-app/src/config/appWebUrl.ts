@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { DEFAULT_WEB_APP_URL } from './constants';
+import { DEFAULT_WEB_APP_URL } from '../../config/defaults.js';
 
 function stripTrailingSlash(url: string): string {
   return url.replace(/\/$/, '');

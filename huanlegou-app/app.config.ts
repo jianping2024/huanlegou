@@ -1,5 +1,6 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
-import { APP_VERSION, DEFAULT_WEB_APP_URL } from './src/config/constants';
+
+const { APP_VERSION, DEFAULT_WEB_APP_URL } = require('./config/defaults.js');
 
 export default ({ config }: ConfigContext): ExpoConfig =>
   ({
