@@ -296,19 +296,12 @@
 
   function updateMainHeaderForTab(tab) {
     const header = $('#main-header');
-    const statusBar = $('.status-bar');
-    const app = $('#app');
     if (!header) return;
-
-    app.classList.remove('profile-tab');
-    statusBar?.classList.remove('profile-status');
 
     $$('.header-mode').forEach((m) => m.classList.remove('active'));
 
     if (tab === 'profile') {
       header.style.display = 'none';
-      app.classList.add('profile-tab');
-      statusBar?.classList.add('profile-status');
       return;
     }
 

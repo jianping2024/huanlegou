@@ -10,7 +10,6 @@
   --border: #eee;
   --bg: #f5f5f5;
   --white: #fff;
-  --status-h: 20px;
   --header-h: 48px;
   --tabbar-h: 58px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -60,35 +59,7 @@ body {
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
 }
 
-/* App 内 WebView：隐藏假状态栏（系统状态栏由原生壳 marginTop 让位） */
-html.in-app-webview .status-bar {
-  display: none;
-}
-
-html.in-app-webview .profile-hero {
-  padding-top: 12px;
-}
-
-/* Status bar */
-.status-bar {
-  height: var(--status-h);
-  background: var(--primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  font-size: 12px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.status-icons {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
+/* Header */
 .home-header {
   gap: 10px;
 }
@@ -170,10 +141,6 @@ html.in-app-webview .profile-hero {
 }
 
 /* 沉浸式详情：浮动在图片上的导航（淘宝/京东同款） */
-#app.immersive-page .status-bar {
-  display: none;
-}
-
 .detail-gallery-wrap,
 .shop-banner-wrap {
   position: relative;
@@ -1780,8 +1747,8 @@ html.in-app-webview .profile-hero {
   transform: translateX(-50%) translateY(-100%);
   width: 100%;
   max-width: 430px;
-  height: calc(var(--status-h) + 44px);
-  padding-top: var(--status-h);
+  height: 44px;
+  padding-top: 0;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -2471,8 +2438,6 @@ body.sheet-open {
 .tab-title-mode .header-msg-btn, .tab-title-mode .header-text-btn { position: absolute; right: 12px; }
 .header-text-btn { border: none; background: none; color: white; font-size: 14px; cursor: pointer; padding: 6px; }
 .app-header.tab-title-header { justify-content: center; }
-#app.profile-tab .status-bar.profile-status { background: transparent; position: absolute; top: 0; left: 0; right: 0; z-index: 10; max-width: 430px; margin: 0 auto; }
-#app.profile-tab .status-bar { background: linear-gradient(135deg, var(--primary), #ff7733); }
 
 .home-notice { display: flex; align-items: center; gap: 8px; background: #fff8f5; padding: 8px 12px; border-bottom: 1px solid #ffe8dc; overflow: hidden; }
 .notice-tag { flex-shrink: 0; font-size: var(--fs-micro); background: var(--primary); color: white; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
@@ -2528,7 +2493,7 @@ body.sheet-open {
 .shop-product-grid { padding-bottom: 24px; }
 
 .profile-page { background: var(--bg); min-height: 100%; padding-bottom: 16px; }
-.profile-hero { background: linear-gradient(135deg, var(--primary) 0%, #ff7733 60%, #ff9955 100%); padding: calc(var(--status-h) + 12px) 16px 20px; color: white; }
+.profile-hero { background: linear-gradient(135deg, var(--primary) 0%, #ff7733 60%, #ff9955 100%); padding: 16px 16px 20px; color: white; }
 .profile-top-actions { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; }
 .profile-action-btn { width: 34px; height: 34px; border: none; border-radius: 50%; background: rgba(255,255,255,.2); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .profile-action-btn svg { width: 18px; height: 18px; }
