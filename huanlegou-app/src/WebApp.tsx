@@ -1,11 +1,15 @@
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect, useState } from 'react';
-import { BackHandler, Linking, Platform, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { BackHandler, Linking, Platform, StatusBar as RNStatusBar, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
 import { APP_WEB_HOME } from './config/appWebUrl';
 import BrandedSplash from './ui/BrandedSplash';
 import ErrorScreen from './ui/ErrorScreen';
+
+function getAndroidStatusBarHeight() {
+  return RNStatusBar.currentHeight ?? 32;
+}
 
 export default function WebApp() {
   const [error, setError] = useState<string | null>(null);
@@ -13,11 +17,21 @@ export default function WebApp() {
   const [webView, setWebView] = useState<WebView | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
 
+  const topInsetPx = useMemo(
+    () => (Platform.OS === 'android' ? getAndroidStatusBarHeight() : 0),
+    [],
+  );
+
+  const injectedBeforeContentLoaded = useMemo(
+    () =>
+      `(function(){var d=document.documentElement;d.classList.add('in-app-webview');d.style.setProperty('--safe-top','${topInsetPx}px');})();true;`,
+    [topInsetPx],
+  );
+
   const hideNativeSplash = useCallback(() => {
     SplashScreen.hideAsync().catch(() => {});
   }, []);
 
-  // Hand off from native splash to our full-screen branded overlay ASAP.
   useEffect(() => {
     hideNativeSplash();
   }, [hideNativeSplash]);
@@ -85,6 +99,7 @@ export default function WebApp() {
         mixedContentMode="always"
         setSupportMultipleWindows={false}
         textZoom={100}
+        injectedJavaScriptBeforeContentLoaded={injectedBeforeContentLoaded}
         onNavigationStateChange={onNavChange}
         onLoadEnd={finishLoading}
         onError={onWebViewError}
