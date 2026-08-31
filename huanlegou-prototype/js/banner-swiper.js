@@ -1,8 +1,5 @@
 /**
- * 首页 Banner — 唯一实现：clone 无限循环 + 拖动/snap 3D 转场
- *
- * 手势：touch 优先（Android WebView 可靠），pointer 仅用于鼠标。
- * touch-action:none，避免浏览器抢走横滑。
+ * 首页 Banner — 唯一实现：clone 无限循环 + touch 拖动
  */
 (function () {
   'use strict';
@@ -10,6 +7,7 @@
   const AUTO_MS = 4000;
   const SWIPE_THRESHOLD = 0.16;
   const AXIS_LOCK_PX = 6;
+  const LOOP_RESET_MS = 540;
 
   function slideHtml(b) {
     return `
@@ -27,21 +25,17 @@
     this.banners = banners;
     this.count = banners.length;
     this.trackIndex = 1;
-    this.logicalIndex = 0;
+    this.dotIndex = 0;
     this.width = 0;
     this.dragX = 0;
     this.dragging = false;
     this.startX = 0;
     this.startY = 0;
-    this.axis = null; // 'x' | 'y' | null
+    this.axis = null;
     this.timer = null;
+    this.loopResetTimer = null;
     this.usingTouch = false;
     this.onTransitionEnd = this.handleTransitionEnd.bind(this);
-
-    this.render();
-    this.bind();
-    this.applyTransform({ animate: false, dragging: false });
-    this.startAuto();
   }
 
   BannerSwiperInstance.prototype.render = function () {
@@ -71,36 +65,49 @@
     this.track = this.wrap.querySelector('.banner-track');
     this.slides = this.track ? [...this.track.querySelectorAll('.banner-slide')] : [];
     this.trackIndex = this.count === 1 ? 0 : 1;
-    this.logicalIndex = 0;
+    this.dotIndex = 0;
+  };
+
+  BannerSwiperInstance.prototype.mount = function () {
+    this.render();
+    this.bind();
+    this.applyTransform({ animate: false, dragging: false });
+    this.startAuto();
   };
 
   BannerSwiperInstance.prototype.logicalToTrack = function (logical) {
     return logical + 1;
   };
 
-  BannerSwiperInstance.prototype.trackToLogical = function (trackIndex) {
-    if (this.count <= 1) return 0;
-    if (trackIndex === 0) return this.count - 1;
-    if (trackIndex === this.count + 1) return 0;
-    return trackIndex - 1;
+  BannerSwiperInstance.prototype.clampDragPx = function (dragPx) {
+    if (this.count <= 1 || !this.width) return dragPx;
+    const w = this.width;
+    const t = this.trackIndex;
+    const minOffset = -(t + 1) * w;
+    const maxOffset = -(t - 1) * w;
+    const rawOffset = -t * w + dragPx;
+    const clampedOffset = Math.max(minOffset, Math.min(maxOffset, rawOffset));
+    return clampedOffset + t * w;
   };
 
-  BannerSwiperInstance.prototype.updateDots = function () {
-    this.wrap.querySelectorAll('.banner-dots span').forEach((dot, i) => {
-      dot.classList.toggle('active', i === this.logicalIndex);
+  BannerSwiperInstance.prototype.syncActiveSlide = function (offset) {
+    if (!this.slides.length) return;
+    let activeIdx = this.trackIndex;
+    if (this.dragging && this.width) {
+      activeIdx = Math.round(-offset / this.width);
+      activeIdx = Math.max(0, Math.min(this.slides.length - 1, activeIdx));
+    }
+    this.slides.forEach((slide, i) => {
+      slide.classList.toggle('is-active', i === activeIdx);
     });
   };
 
-  BannerSwiperInstance.prototype.applySlideEffects = function (offset) {
-    if (!this.width || !this.slides.length) return;
-
-    this.slides.forEach((slide, i) => {
-      const slideLeft = i * this.width + offset;
-      const progress = -slideLeft / this.width;
-      // 不用 scale/rotateY：slide 缩小会在中间露出 .banner-swiper 的 #111 背景（黑屏）
-      slide.style.transform = '';
-      slide.style.opacity = '1';
-      slide.classList.toggle('is-active', Math.abs(progress) < 0.35);
+  BannerSwiperInstance.prototype.updateDots = function () {
+    if (this.trackIndex >= 1 && this.trackIndex <= this.count) {
+      this.dotIndex = this.trackIndex - 1;
+    }
+    this.wrap.querySelectorAll('.banner-dots span').forEach((dot, i) => {
+      dot.classList.toggle('active', i === this.dotIndex);
     });
   };
 
@@ -114,43 +121,66 @@
     this.width = this.wrap.offsetWidth;
     if (!this.width) return;
 
-    const offset = -this.trackIndex * this.width + dragPx;
+    const safeDragPx = dragging ? this.clampDragPx(dragPx) : 0;
+    const offset = -this.trackIndex * this.width + safeDragPx;
+
     this.track.style.transition =
       dragging || !animate ? 'none' : 'transform 0.52s cubic-bezier(0.22, 1, 0.36, 1)';
     this.track.classList.toggle('is-dragging', dragging);
     this.wrap.classList.toggle('is-dragging', dragging);
     this.track.style.transform = `translate3d(${offset}px, 0, 0)`;
 
-    this.logicalIndex = this.trackToLogical(this.trackIndex);
     this.updateDots();
-    this.applySlideEffects(offset);
+    this.syncActiveSlide(offset);
+  };
+
+  BannerSwiperInstance.prototype.clearLoopReset = function () {
+    if (this.loopResetTimer) {
+      clearTimeout(this.loopResetTimer);
+      this.loopResetTimer = null;
+    }
+    this.track?.removeEventListener('transitionend', this.onTransitionEnd);
+    this.wrap.classList.remove('is-resetting');
+  };
+
+  BannerSwiperInstance.prototype.performLoopReset = function () {
+    if (this.count <= 1) return;
+    this.clearLoopReset();
+
+    if (this.trackIndex === this.count + 1) {
+      this.wrap.classList.add('is-resetting');
+      this.trackIndex = 1;
+      this.dotIndex = 0;
+      this.applyTransform({ animate: false, dragging: false });
+      this.wrap.classList.remove('is-resetting');
+    } else if (this.trackIndex === 0) {
+      this.wrap.classList.add('is-resetting');
+      this.trackIndex = this.count;
+      this.dotIndex = this.count - 1;
+      this.applyTransform({ animate: false, dragging: false });
+      this.wrap.classList.remove('is-resetting');
+    }
+  };
+
+  BannerSwiperInstance.prototype.scheduleLoopReset = function () {
+    this.clearLoopReset();
+    this.track.addEventListener('transitionend', this.onTransitionEnd);
+    this.loopResetTimer = setTimeout(() => this.performLoopReset(), LOOP_RESET_MS);
   };
 
   BannerSwiperInstance.prototype.handleTransitionEnd = function (e) {
     if (e.target !== this.track || e.propertyName !== 'transform') return;
-    if (this.count <= 1) return;
-
-    if (this.trackIndex === this.count + 1) {
-      this.track.removeEventListener('transitionend', this.onTransitionEnd);
-      this.trackIndex = 1;
-      this.logicalIndex = 0;
-      this.applyTransform({ animate: false, dragging: false });
-    } else if (this.trackIndex === 0) {
-      this.track.removeEventListener('transitionend', this.onTransitionEnd);
-      this.trackIndex = this.count;
-      this.logicalIndex = this.count - 1;
-      this.applyTransform({ animate: false, dragging: false });
-    }
+    this.performLoopReset();
   };
 
   BannerSwiperInstance.prototype.goToTrack = function (trackIndex, animate) {
     if (this.count <= 1) return;
+    this.clearLoopReset();
     this.trackIndex = trackIndex;
-    this.logicalIndex = this.trackToLogical(trackIndex);
     this.applyTransform({ animate, dragging: false });
 
     if (animate && (trackIndex === 0 || trackIndex === this.count + 1)) {
-      this.track.addEventListener('transitionend', this.onTransitionEnd);
+      this.scheduleLoopReset();
     }
   };
 
@@ -182,7 +212,7 @@
 
   BannerSwiperInstance.prototype.beginDrag = function (x, y) {
     this.stopAuto();
-    this.track.removeEventListener('transitionend', this.onTransitionEnd);
+    this.clearLoopReset();
     this.dragging = true;
     this.axis = null;
     this.startX = x;
@@ -201,7 +231,6 @@
       if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
       this.axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
       if (this.axis === 'y') {
-        // 交给页面纵向滚动，本轮不再接管
         this.dragging = false;
         this.wrap.classList.remove('is-dragging');
         this.track.classList.remove('is-dragging');
@@ -214,7 +243,7 @@
     if (this.axis !== 'x') return;
     if (event) event.preventDefault();
 
-    this.dragX = dx;
+    this.dragX = this.clampDragPx(dx);
     this.applyTransform({ animate: false, dragging: true, dragPx: this.dragX });
   };
 
@@ -261,7 +290,7 @@
 
     this.onPointerDown = (e) => {
       if (this.count <= 1) return;
-      if (e.pointerType === 'touch') return; // touch 走 touch 事件
+      if (e.pointerType === 'touch') return;
       if (e.target.closest('.banner-dots')) return;
       this.usingTouch = false;
       this.beginDrag(e.clientX, e.clientY);
@@ -297,7 +326,7 @@
         const i = Number(dot.dataset.index);
         if (Number.isNaN(i)) return;
         this.stopAuto();
-        this.track.removeEventListener('transitionend', this.onTransitionEnd);
+        this.clearLoopReset();
         this.goToLogical(i, true);
         this.startAuto();
       });
@@ -306,7 +335,7 @@
 
   BannerSwiperInstance.prototype.destroy = function () {
     this.stopAuto();
-    this.track?.removeEventListener('transitionend', this.onTransitionEnd);
+    this.clearLoopReset();
     this.wrap.removeEventListener('touchstart', this.onTouchStart);
     this.wrap.removeEventListener('touchmove', this.onTouchMove);
     this.wrap.removeEventListener('touchend', this.onTouchEnd);
@@ -323,8 +352,10 @@
     mount(wrap, banners) {
       if (!wrap) return null;
       if (this._active) this._active.destroy();
-      this._active = new BannerSwiperInstance(wrap, banners);
-      return this._active;
+      const inst = new BannerSwiperInstance(wrap, banners);
+      inst.mount();
+      this._active = inst;
+      return inst;
     },
   };
 })();
