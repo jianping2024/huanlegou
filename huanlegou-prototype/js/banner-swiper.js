@@ -10,8 +10,6 @@
   const AUTO_MS = 4000;
   const SWIPE_THRESHOLD = 0.16;
   const AXIS_LOCK_PX = 6;
-  const TRANSITION =
-    'transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease';
 
   function slideHtml(b) {
     return `
@@ -93,20 +91,15 @@
     });
   };
 
-  BannerSwiperInstance.prototype.applySlideEffects = function (offset, dragging) {
+  BannerSwiperInstance.prototype.applySlideEffects = function (offset) {
     if (!this.width || !this.slides.length) return;
 
     this.slides.forEach((slide, i) => {
       const slideLeft = i * this.width + offset;
       const progress = -slideLeft / this.width;
-      const clamped = Math.max(-1.25, Math.min(1.25, progress));
-      const scale = 1 - Math.abs(clamped) * 0.1;
-      const rotateY = clamped * -12;
-      const opacity = Math.max(0.45, 1 - Math.abs(clamped) * 0.45);
-
-      slide.style.transition = dragging ? 'none' : TRANSITION;
-      slide.style.transform = `scale(${scale}) rotateY(${rotateY}deg)`;
-      slide.style.opacity = String(opacity);
+      // 不用 scale/rotateY：slide 缩小会在中间露出 .banner-swiper 的 #111 背景（黑屏）
+      slide.style.transform = '';
+      slide.style.opacity = '1';
       slide.classList.toggle('is-active', Math.abs(progress) < 0.35);
     });
   };
@@ -130,7 +123,7 @@
 
     this.logicalIndex = this.trackToLogical(this.trackIndex);
     this.updateDots();
-    this.applySlideEffects(offset, dragging);
+    this.applySlideEffects(offset);
   };
 
   BannerSwiperInstance.prototype.handleTransitionEnd = function (e) {
