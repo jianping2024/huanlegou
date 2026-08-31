@@ -1,17 +1,10 @@
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  BackHandler,
-  Linking,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { BackHandler, Linking, Platform, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
 import { APP_WEB_HOME } from './config/appWebUrl';
+import BrandedSplash from './ui/BrandedSplash';
 import ErrorScreen from './ui/ErrorScreen';
 
 export default function WebApp() {
@@ -20,9 +13,14 @@ export default function WebApp() {
   const [webView, setWebView] = useState<WebView | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
 
-  const hideSplash = useCallback(() => {
+  const hideNativeSplash = useCallback(() => {
     SplashScreen.hideAsync().catch(() => {});
   }, []);
+
+  // Hand off from native splash to our full-screen branded overlay ASAP.
+  useEffect(() => {
+    hideNativeSplash();
+  }, [hideNativeSplash]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return undefined;
@@ -43,8 +41,7 @@ export default function WebApp() {
 
   const finishLoading = useCallback(() => {
     setLoading(false);
-    hideSplash();
-  }, [hideSplash]);
+  }, []);
 
   const onWebViewError = useCallback(
     (event: { nativeEvent: { description?: string } }) => {
@@ -64,10 +61,6 @@ export default function WebApp() {
     finishLoading();
   }, [finishLoading]);
 
-  useEffect(() => {
-    if (error) hideSplash();
-  }, [error, hideSplash]);
-
   if (error) {
     return (
       <ErrorScreen
@@ -81,12 +74,6 @@ export default function WebApp() {
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#ffffff" />
-          <Text style={styles.loadingText}>正在加载欢乐购…</Text>
-        </View>
-      ) : null}
       <WebView
         ref={setWebView}
         source={{ uri: APP_WEB_HOME }}
@@ -105,6 +92,7 @@ export default function WebApp() {
         onRenderProcessGone={onWebViewCrash}
         onContentProcessDidTerminate={onWebViewCrash}
       />
+      {loading ? <BrandedSplash /> : null}
     </View>
   );
 }
@@ -117,18 +105,5 @@ const styles = StyleSheet.create({
   webview: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF5000',
-    zIndex: 1,
-  },
-  loadingText: {
-    marginTop: 12,
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 15,
-    fontWeight: '500',
   },
 });

@@ -2,10 +2,18 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const { APP_VERSION, DEFAULT_WEB_APP_URL } = require('./config/defaults.js');
 
-const splash = {
+/** Android 12+ only supports a centered icon + background color (not full-screen art). */
+const androidSplash = {
+  backgroundColor: '#FF5000',
+  image: './assets/splash-logo.png',
+  imageWidth: 240,
+};
+
+const iosSplash = {
+  backgroundColor: '#FF5000',
   image: './assets/splash.png',
   resizeMode: 'cover' as const,
-  backgroundColor: '#FF5000',
+  enableFullScreenImage_legacy: true,
 };
 
 export default ({ config }: ConfigContext): ExpoConfig =>
@@ -17,11 +25,11 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
-    splash,
+    splash: androidSplash,
     ios: {
       supportsTablet: false,
       bundleIdentifier: 'com.huanlegou.app',
-      splash,
+      splash: iosSplash,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
@@ -29,7 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     android: {
       package: 'com.huanlegou.app',
       permissions: ['INTERNET'],
-      splash,
+      splash: androidSplash,
       adaptiveIcon: {
         backgroundColor: '#FF5000',
         foregroundImage: './assets/android-icon-foreground.png',
@@ -45,9 +53,10 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       [
         'expo-splash-screen',
         {
-          backgroundColor: '#FF5000',
-          image: './assets/splash.png',
-          resizeMode: 'cover',
+          ...androidSplash,
+          resizeMode: 'contain',
+          ios: iosSplash,
+          android: androidSplash,
         },
       ],
       'expo-asset',
