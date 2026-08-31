@@ -1,5 +1,14 @@
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  BackHandler,
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
 import { APP_WEB_URL } from './config/appWebUrl';
@@ -47,6 +56,9 @@ export default function WebApp() {
       <View style={styles.center}>
         <Text style={styles.errorTitle}>加载失败</Text>
         <Text style={styles.errorText}>{error}</Text>
+        <Pressable style={styles.browserBtn} onPress={() => Linking.openURL(APP_WEB_URL)}>
+          <Text style={styles.browserBtnText}>在浏览器中打开</Text>
+        </Pressable>
       </View>
     );
   }
@@ -119,5 +131,17 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  browserBtn: {
+    marginTop: 20,
+    backgroundColor: '#FF5000',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  browserBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
