@@ -362,45 +362,42 @@ body {
   align-items: center;
 }
 
-/* Banner — 逻辑见 js/banner-swiper.js（唯一实现） */
+/* Banner — Swiper 封装见 js/banner-swiper.js */
 .banner-swiper {
   position: relative;
   height: 168px;
   overflow: hidden;
   background: #111;
-  touch-action: none;
-  perspective: 900px;
+  touch-action: pan-y;
   -webkit-user-select: none;
   user-select: none;
-  cursor: grab;
+}
+
+.banner-swiper-inner {
+  height: 100%;
+  width: 100%;
+}
+
+.banner-swiper-inner.swiper {
+  overflow: hidden;
 }
 
 .banner-swiper.is-dragging {
   cursor: grabbing;
 }
 
-.banner-track {
-  display: flex;
+.banner-swiper-inner:not(.swiper) .swiper-wrapper {
   height: 100%;
-  will-change: transform;
-  transform-style: preserve-3d;
-}
-
-.banner-track.is-dragging {
-  transition: none;
 }
 
 .banner-slide {
-  flex: 0 0 100%;
   height: 100%;
   position: relative;
   overflow: hidden;
-  transform-origin: center center;
-  backface-visibility: hidden;
 }
 
-.banner-track.is-dragging .banner-slide {
-  transition: none;
+.banner-slide.swiper-slide {
+  width: 100%;
 }
 
 .banner-bg {
@@ -414,8 +411,7 @@ body {
   animation: bannerKenBurns 7s ease-in-out infinite alternate;
 }
 
-.banner-swiper.is-dragging .banner-slide.is-active .banner-bg,
-.banner-swiper.is-resetting .banner-slide .banner-bg {
+.banner-swiper.is-dragging .banner-slide.is-active .banner-bg {
   animation: none;
 }
 
@@ -441,7 +437,6 @@ body {
   transform: none;
 }
 
-.banner-swiper.is-resetting .banner-overlay,
 .banner-swiper.is-dragging .banner-overlay {
   transition: none;
 }
@@ -496,16 +491,20 @@ body {
   gap: 6px;
 }
 
-.banner-dots span {
+.banner-dots span,
+.banner-dots .banner-dot {
   width: 6px;
   height: 6px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   transition: width 0.28s ease, background 0.28s ease;
+  opacity: 1;
+  margin: 0 !important;
 }
 
-.banner-dots span.active {
+.banner-dots span.active,
+.banner-dots .banner-dot.active {
   width: 16px;
   background: white;
 }
