@@ -5,7 +5,7 @@ export const ANDROID_BOTTOM_INSET_FALLBACK = 28;
 
 export const WEB_IN_APP_CLASS = 'in-app-webview';
 
-/** 底部安全区：原生 webArea paddingBottom 的唯一数据源 */
+/** 底部安全区：原生 bottomInset 白条高度的唯一数据源 */
 export function resolveBottomInset(rawBottom: number): number {
   if (rawBottom > 0) return rawBottom;
   if (Platform.OS === 'android') return ANDROID_BOTTOM_INSET_FALLBACK;

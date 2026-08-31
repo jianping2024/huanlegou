@@ -11,6 +11,7 @@ import { buildInAppWebBootstrapScript, resolveBottomInset } from './webview/safe
 
 const LOAD_TIMEOUT_MS = 25_000;
 const IN_APP_WEB_BOOTSTRAP = buildInAppWebBootstrapScript();
+const BRAND_ORANGE = '#FF5000';
 
 export default function WebApp() {
   const insets = useSafeAreaInsets();
@@ -114,12 +115,10 @@ export default function WebApp() {
 
   return (
     <View style={styles.root}>
-      <View
-        style={[
-          styles.webArea,
-          { paddingTop: insets.top, paddingBottom: bottomInset },
-        ]}
-      >
+      {insets.top > 0 ? (
+        <View style={[styles.topInset, { height: insets.top }]} />
+      ) : null}
+      <View style={styles.webArea}>
         <WebView
           key={webViewKey}
           ref={setWebView}
@@ -142,6 +141,9 @@ export default function WebApp() {
         />
         {loading ? <BrandedSplash /> : null}
       </View>
+      {bottomInset > 0 ? (
+        <View style={[styles.bottomInset, { height: bottomInset }]} />
+      ) : null}
     </View>
   );
 }
@@ -149,11 +151,16 @@ export default function WebApp() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FF5000',
+    backgroundColor: BRAND_ORANGE,
+  },
+  topInset: {
+    backgroundColor: BRAND_ORANGE,
+  },
+  bottomInset: {
+    backgroundColor: '#ffffff',
   },
   webArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   webview: {
     flex: 1,
