@@ -25,6 +25,11 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
+    androidStatusBar: {
+      backgroundColor: '#FF5000',
+      barStyle: 'light-content',
+      translucent: true,
+    },
     splash: androidSplash,
     ios: {
       supportsTablet: false,

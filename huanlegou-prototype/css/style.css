@@ -60,17 +60,9 @@ body {
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
 }
 
-/* App 内 WebView：隐藏假状态栏，由原生注入 --safe-top（见 WebApp.tsx） */
-html.in-app-webview {
-  --safe-top-fallback: max(env(safe-area-inset-top, 0px), 32px);
-}
-
+/* App 内 WebView：隐藏假状态栏（系统状态栏由原生壳 marginTop 让位） */
 html.in-app-webview .status-bar {
   display: none;
-}
-
-html.in-app-webview #app {
-  padding-top: var(--safe-top, var(--safe-top-fallback));
 }
 
 html.in-app-webview .profile-hero {

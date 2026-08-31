@@ -1537,9 +1537,6 @@
   function init() {
     if (window.ReactNativeWebView) {
       document.documentElement.classList.add('in-app-webview');
-      if (!getComputedStyle(document.documentElement).getPropertyValue('--safe-top').trim()) {
-        document.documentElement.style.setProperty('--safe-top', '32px');
-      }
     }
     renderBanners();
     renderQuickEntries();

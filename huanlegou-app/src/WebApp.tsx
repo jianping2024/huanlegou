@@ -1,31 +1,50 @@
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BackHandler, Linking, Platform, StatusBar as RNStatusBar, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  BackHandler,
+  Linking,
+  Platform,
+  StatusBar as RNStatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
 import { APP_WEB_HOME } from './config/appWebUrl';
 import BrandedSplash from './ui/BrandedSplash';
 import ErrorScreen from './ui/ErrorScreen';
 
-function getAndroidStatusBarHeight() {
-  return RNStatusBar.currentHeight ?? 32;
+const LOAD_TIMEOUT_MS = 25_000;
+
+/** Android WebView draws under the status bar unless we offset the content area. */
+function getAndroidTopInset(): number {
+  if (Platform.OS !== 'android') return 0;
+  return RNStatusBar.currentHeight ?? 0;
 }
 
 export default function WebApp() {
+  const topInset = getAndroidTopInset();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [webViewKey, setWebViewKey] = useState(0);
   const [webView, setWebView] = useState<WebView | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
+  const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const topInsetPx = useMemo(
-    () => (Platform.OS === 'android' ? getAndroidStatusBarHeight() : 0),
-    [],
-  );
+  const clearLoadTimer = useCallback(() => {
+    if (loadTimerRef.current) {
+      clearTimeout(loadTimerRef.current);
+      loadTimerRef.current = null;
+    }
+  }, []);
 
-  const injectedBeforeContentLoaded = useMemo(
-    () =>
-      `(function(){var d=document.documentElement;d.classList.add('in-app-webview');d.style.setProperty('--safe-top','${topInsetPx}px');})();true;`,
-    [topInsetPx],
+  const failLoad = useCallback(
+    (message: string) => {
+      clearLoadTimer();
+      setError(message);
+      setLoading(false);
+    },
+    [clearLoadTimer],
   );
 
   const hideNativeSplash = useCallback(() => {
@@ -35,6 +54,14 @@ export default function WebApp() {
   useEffect(() => {
     hideNativeSplash();
   }, [hideNativeSplash]);
+
+  useEffect(() => {
+    clearLoadTimer();
+    loadTimerRef.current = setTimeout(() => {
+      failLoad(`页面加载超时（${LOAD_TIMEOUT_MS / 1000}s）\n\n${APP_WEB_HOME}`);
+    }, LOAD_TIMEOUT_MS);
+    return clearLoadTimer;
+  }, [webViewKey, clearLoadTimer, failLoad]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return undefined;
@@ -54,68 +81,85 @@ export default function WebApp() {
   }, []);
 
   const finishLoading = useCallback(() => {
+    clearLoadTimer();
     setLoading(false);
-  }, []);
+  }, [clearLoadTimer]);
 
   const onWebViewError = useCallback(
     (event: { nativeEvent: { description?: string } }) => {
       const detail = event.nativeEvent.description?.trim();
-      setError(
+      failLoad(
         detail
-          ? `页面加载失败：${detail}\n\n请检查网络，或确认页面服务器已部署。`
-          : '页面加载失败，请检查网络连接',
+          ? `页面加载失败：${detail}\n\n${APP_WEB_HOME}`
+          : `页面加载失败，请检查网络连接\n\n${APP_WEB_HOME}`,
       );
-      finishLoading();
     },
-    [finishLoading],
+    [failLoad],
   );
 
   const onWebViewCrash = useCallback(() => {
-    setError('页面进程异常退出，请重试。');
-    finishLoading();
-  }, [finishLoading]);
+    failLoad('页面进程异常退出，请重试。');
+  }, [failLoad]);
+
+  const retry = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    setWebViewKey((k) => k + 1);
+  }, []);
 
   if (error) {
     return (
-      <ErrorScreen
-        title="加载失败"
-        message={error}
-        actionLabel="在浏览器中打开"
-        onAction={() => Linking.openURL(APP_WEB_HOME)}
-      />
+      <View style={[styles.root, { paddingTop: topInset }]}>
+        <ErrorScreen
+          title="加载失败"
+          message={error}
+          actionLabel="重试"
+          onAction={retry}
+          secondaryLabel="在浏览器中打开"
+          onSecondaryAction={() => Linking.openURL(APP_WEB_HOME)}
+        />
+      </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <WebView
-        ref={setWebView}
-        source={{ uri: APP_WEB_HOME }}
-        style={styles.webview}
-        originWhitelist={['https://*', 'http://*']}
-        domStorageEnabled
-        javaScriptEnabled
-        cacheEnabled
-        mixedContentMode="always"
-        setSupportMultipleWindows={false}
-        textZoom={100}
-        injectedJavaScriptBeforeContentLoaded={injectedBeforeContentLoaded}
-        onNavigationStateChange={onNavChange}
-        onLoadEnd={finishLoading}
-        onError={onWebViewError}
-        onHttpError={onWebViewError}
-        onRenderProcessGone={onWebViewCrash}
-        onContentProcessDidTerminate={onWebViewCrash}
-      />
-      {loading ? <BrandedSplash /> : null}
+    <View style={styles.root}>
+      <View style={[styles.webArea, { marginTop: topInset }]}>
+        <WebView
+          key={webViewKey}
+          ref={setWebView}
+          source={{ uri: APP_WEB_HOME }}
+          style={styles.webview}
+          originWhitelist={['https://*', 'http://*']}
+          domStorageEnabled
+          javaScriptEnabled
+          cacheEnabled
+          mixedContentMode="always"
+          setSupportMultipleWindows={false}
+          textZoom={100}
+          injectedJavaScriptBeforeContentLoaded={
+            "document.documentElement.classList.add('in-app-webview');true;"
+          }
+          onNavigationStateChange={onNavChange}
+          onLoadEnd={finishLoading}
+          onError={onWebViewError}
+          onHttpError={onWebViewError}
+          onRenderProcessGone={onWebViewCrash}
+          onContentProcessDidTerminate={onWebViewCrash}
+        />
+        {loading ? <BrandedSplash /> : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: '#FF5000',
+  },
+  webArea: {
+    flex: 1,
   },
   webview: {
     flex: 1,
