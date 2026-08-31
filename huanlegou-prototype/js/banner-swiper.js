@@ -1,11 +1,15 @@
 /**
  * 首页 Banner — 唯一实现：clone 无限循环 + 拖动/snap 3D 转场
+ *
+ * 手势：touch 优先（Android WebView 可靠），pointer 仅用于鼠标。
+ * touch-action:none，避免浏览器抢走横滑。
  */
 (function () {
   'use strict';
 
   const AUTO_MS = 4000;
   const SWIPE_THRESHOLD = 0.16;
+  const AXIS_LOCK_PX = 6;
   const TRANSITION =
     'transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease';
 
@@ -29,9 +33,11 @@
     this.width = 0;
     this.dragX = 0;
     this.dragging = false;
-    this.pointerId = null;
     this.startX = 0;
+    this.startY = 0;
+    this.axis = null; // 'x' | 'y' | null
     this.timer = null;
+    this.usingTouch = false;
     this.onTransitionEnd = this.handleTransitionEnd.bind(this);
 
     this.render();
@@ -181,51 +187,115 @@
     this.timer = setInterval(() => this.goNext(true), AUTO_MS);
   };
 
-  BannerSwiperInstance.prototype.onPointerDown = function (e) {
-    if (this.count <= 1) return;
-    if (e.target.closest('.banner-dots')) return;
-
+  BannerSwiperInstance.prototype.beginDrag = function (x, y) {
     this.stopAuto();
     this.track.removeEventListener('transitionend', this.onTransitionEnd);
-    this.wrap.setPointerCapture(e.pointerId);
     this.dragging = true;
-    this.pointerId = e.pointerId;
-    this.startX = e.clientX;
+    this.axis = null;
+    this.startX = x;
+    this.startY = y;
     this.dragX = 0;
     this.applyTransform({ animate: false, dragging: true });
   };
 
-  BannerSwiperInstance.prototype.onPointerMove = function (e) {
-    if (!this.dragging || e.pointerId !== this.pointerId) return;
-    this.dragX = e.clientX - this.startX;
+  BannerSwiperInstance.prototype.moveDrag = function (x, y, event) {
+    if (!this.dragging) return;
+
+    const dx = x - this.startX;
+    const dy = y - this.startY;
+
+    if (!this.axis) {
+      if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
+      this.axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
+      if (this.axis === 'y') {
+        // 交给页面纵向滚动，本轮不再接管
+        this.dragging = false;
+        this.wrap.classList.remove('is-dragging');
+        this.track.classList.remove('is-dragging');
+        this.applyTransform({ animate: false, dragging: false });
+        this.startAuto();
+        return;
+      }
+    }
+
+    if (this.axis !== 'x') return;
+    if (event) event.preventDefault();
+
+    this.dragX = dx;
     this.applyTransform({ animate: false, dragging: true, dragPx: this.dragX });
   };
 
-  BannerSwiperInstance.prototype.onPointerUp = function (e) {
-    if (!this.dragging || e.pointerId !== this.pointerId) return;
-    this.wrap.releasePointerCapture(e.pointerId);
+  BannerSwiperInstance.prototype.endDrag = function () {
+    if (!this.dragging) return;
     this.dragging = false;
-    this.pointerId = null;
 
-    const threshold = this.width * SWIPE_THRESHOLD;
-    if (this.dragX < -threshold) this.goNext(true);
-    else if (this.dragX > threshold) this.goPrev(true);
-    else this.applyTransform({ animate: true, dragging: false });
+    if (this.axis === 'x') {
+      const threshold = this.width * SWIPE_THRESHOLD;
+      if (this.dragX < -threshold) this.goNext(true);
+      else if (this.dragX > threshold) this.goPrev(true);
+      else this.applyTransform({ animate: true, dragging: false });
+    } else {
+      this.applyTransform({ animate: false, dragging: false });
+    }
 
     this.dragX = 0;
+    this.axis = null;
     this.startAuto();
   };
 
   BannerSwiperInstance.prototype.bind = function () {
-    this.onPointerDownBound = (e) => this.onPointerDown(e);
-    this.onPointerMoveBound = (e) => this.onPointerMove(e);
-    this.onPointerUpBound = (e) => this.onPointerUp(e);
+    this.onTouchStart = (e) => {
+      if (this.count <= 1) return;
+      if (e.target.closest('.banner-dots')) return;
+      if (e.touches.length !== 1) return;
+      this.usingTouch = true;
+      const t = e.touches[0];
+      this.beginDrag(t.clientX, t.clientY);
+    };
+
+    this.onTouchMove = (e) => {
+      if (!this.usingTouch || !this.dragging) return;
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      this.moveDrag(t.clientX, t.clientY, e);
+    };
+
+    this.onTouchEnd = () => {
+      if (!this.usingTouch) return;
+      this.usingTouch = false;
+      this.endDrag();
+    };
+
+    this.onPointerDown = (e) => {
+      if (this.count <= 1) return;
+      if (e.pointerType === 'touch') return; // touch 走 touch 事件
+      if (e.target.closest('.banner-dots')) return;
+      this.usingTouch = false;
+      this.beginDrag(e.clientX, e.clientY);
+    };
+
+    this.onPointerMove = (e) => {
+      if (this.usingTouch || e.pointerType === 'touch') return;
+      if (!this.dragging) return;
+      this.moveDrag(e.clientX, e.clientY, e);
+    };
+
+    this.onPointerUp = (e) => {
+      if (this.usingTouch || e.pointerType === 'touch') return;
+      this.endDrag();
+    };
+
     this.onResizeBound = () => this.applyTransform({ animate: false, dragging: false });
 
-    this.wrap.addEventListener('pointerdown', this.onPointerDownBound);
-    this.wrap.addEventListener('pointermove', this.onPointerMoveBound);
-    this.wrap.addEventListener('pointerup', this.onPointerUpBound);
-    this.wrap.addEventListener('pointercancel', this.onPointerUpBound);
+    this.wrap.addEventListener('touchstart', this.onTouchStart, { passive: true });
+    this.wrap.addEventListener('touchmove', this.onTouchMove, { passive: false });
+    this.wrap.addEventListener('touchend', this.onTouchEnd);
+    this.wrap.addEventListener('touchcancel', this.onTouchEnd);
+
+    this.wrap.addEventListener('pointerdown', this.onPointerDown);
+    this.wrap.addEventListener('pointermove', this.onPointerMove);
+    this.wrap.addEventListener('pointerup', this.onPointerUp);
+    this.wrap.addEventListener('pointercancel', this.onPointerUp);
     window.addEventListener('resize', this.onResizeBound);
 
     this.wrap.querySelectorAll('.banner-dots span').forEach((dot) => {
@@ -244,10 +314,14 @@
   BannerSwiperInstance.prototype.destroy = function () {
     this.stopAuto();
     this.track?.removeEventListener('transitionend', this.onTransitionEnd);
-    this.wrap.removeEventListener('pointerdown', this.onPointerDownBound);
-    this.wrap.removeEventListener('pointermove', this.onPointerMoveBound);
-    this.wrap.removeEventListener('pointerup', this.onPointerUpBound);
-    this.wrap.removeEventListener('pointercancel', this.onPointerUpBound);
+    this.wrap.removeEventListener('touchstart', this.onTouchStart);
+    this.wrap.removeEventListener('touchmove', this.onTouchMove);
+    this.wrap.removeEventListener('touchend', this.onTouchEnd);
+    this.wrap.removeEventListener('touchcancel', this.onTouchEnd);
+    this.wrap.removeEventListener('pointerdown', this.onPointerDown);
+    this.wrap.removeEventListener('pointermove', this.onPointerMove);
+    this.wrap.removeEventListener('pointerup', this.onPointerUp);
+    this.wrap.removeEventListener('pointercancel', this.onPointerUp);
     window.removeEventListener('resize', this.onResizeBound);
   };
 

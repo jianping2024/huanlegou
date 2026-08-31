@@ -368,7 +368,7 @@ body {
   height: 168px;
   overflow: hidden;
   background: #111;
-  touch-action: pan-x pinch-zoom;
+  touch-action: none;
   perspective: 900px;
   -webkit-user-select: none;
   user-select: none;
