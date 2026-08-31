@@ -362,13 +362,13 @@ body {
   align-items: center;
 }
 
-/* Banner */
+/* Banner — 逻辑见 js/banner-swiper.js（唯一实现） */
 .banner-swiper {
   position: relative;
   height: 168px;
   overflow: hidden;
   background: #111;
-  touch-action: pan-y pinch-zoom;
+  touch-action: pan-x pinch-zoom;
   perspective: 900px;
   -webkit-user-select: none;
   user-select: none;
@@ -383,7 +383,7 @@ body {
   display: flex;
   height: 100%;
   will-change: transform;
-  transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-style: preserve-3d;
 }
 
 .banner-track.is-dragging {
@@ -397,7 +397,6 @@ body {
   overflow: hidden;
   transform-origin: center center;
   backface-visibility: hidden;
-  transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease;
 }
 
 .banner-track.is-dragging .banner-slide {

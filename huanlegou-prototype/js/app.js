@@ -4,12 +4,10 @@
   const state = {
     tab: 'home',
     stack: [],
-    bannerIndex: 0,
     categoryIndex: 0,
     currentProductId: null,
     searchQuery: '',
     galleryIndex: 0,
-    bannerTimer: null,
     selectedSpec: '',
     listSort: 'default',
     listPriceAsc: true,
@@ -324,145 +322,7 @@
   }
 
   function renderBanners() {
-    const banners = api.getBanners();
-    const wrap = $('#banner-swiper');
-    wrap.innerHTML = `
-      <div class="banner-track">
-        ${banners
-          .map(
-            (b, i) => `
-        <div class="banner-slide${i === 0 ? ' is-active' : ''}" data-index="${i}">
-          <div class="banner-bg" style="background-image:url('${b.image}')"></div>
-          <div class="banner-overlay">
-            <div class="banner-title">${b.title}</div>
-            <div class="banner-sub">${b.subtitle}</div>
-          </div>
-        </div>`,
-          )
-          .join('')}
-      </div>
-      <div class="banner-dots">${banners.map((_, i) => `<span class="${i === 0 ? 'active' : ''}" data-index="${i}"></span>`).join('')}</div>`;
-
-    bindBannerSwiper(wrap);
-    applyBannerTransform(0, { animate: false, dragging: false });
-    startBannerAuto();
-  }
-
-  function applyBannerTransform(dragPx = 0, { animate = true, dragging = false } = {}) {
-    const wrap = $('#banner-swiper');
-    const track = wrap?.querySelector('.banner-track');
-    if (!wrap || !track) return;
-
-    const width = wrap.offsetWidth;
-    const offset = -state.bannerIndex * width + dragPx;
-    track.style.transition = dragging || !animate ? 'none' : '';
-    track.classList.toggle('is-dragging', dragging);
-    wrap.classList.toggle('is-dragging', dragging);
-    track.style.transform = `translate3d(${offset}px, 0, 0)`;
-
-    const slides = $$('.banner-slide');
-    if (dragging && width > 0) {
-      slides.forEach((slide, i) => {
-        const slideLeft = i * width + offset;
-        const progress = -slideLeft / width;
-        const clamped = Math.max(-1.25, Math.min(1.25, progress));
-        const scale = 1 - Math.abs(clamped) * 0.11;
-        const rotateY = clamped * -14;
-        slide.style.transform = `scale(${scale}) rotateY(${rotateY}deg)`;
-        slide.style.opacity = String(Math.max(0.35, 1 - Math.abs(clamped) * 0.5));
-      });
-    } else {
-      slides.forEach((slide) => {
-        slide.style.transform = '';
-        slide.style.opacity = '';
-      });
-    }
-  }
-
-  function setBannerIndex(index, { animate = true } = {}) {
-    const count = api.getBanners().length;
-    if (!count) return;
-    state.bannerIndex = ((index % count) + count) % count;
-    $$('.banner-slide').forEach((el, i) => el.classList.toggle('is-active', i === state.bannerIndex));
-    $$('.banner-dots span').forEach((el, i) => el.classList.toggle('active', i === state.bannerIndex));
-    applyBannerTransform(0, { animate, dragging: false });
-  }
-
-  function bindBannerSwiper(wrap) {
-    let startX = 0;
-    let dragX = 0;
-    let dragging = false;
-    let pointerId = null;
-
-    const pauseAuto = () => clearInterval(state.bannerTimer);
-
-    const onStart = (clientX, id) => {
-      pauseAuto();
-      dragging = true;
-      pointerId = id;
-      startX = clientX;
-      dragX = 0;
-      applyBannerTransform(0, { animate: false, dragging: true });
-    };
-
-    const onMove = (clientX) => {
-      if (!dragging) return;
-      dragX = clientX - startX;
-      applyBannerTransform(dragX, { animate: false, dragging: true });
-    };
-
-    const onEnd = () => {
-      if (!dragging) return;
-      dragging = false;
-      pointerId = null;
-      const width = wrap.offsetWidth;
-      const threshold = width * 0.16;
-      let next = state.bannerIndex;
-      if (dragX < -threshold) next += 1;
-      else if (dragX > threshold) next -= 1;
-      dragX = 0;
-      setBannerIndex(next);
-      startBannerAuto();
-    };
-
-    wrap.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('.banner-dots')) return;
-      wrap.setPointerCapture(e.pointerId);
-      onStart(e.clientX, e.pointerId);
-    });
-    wrap.addEventListener('pointermove', (e) => {
-      if (!dragging || e.pointerId !== pointerId) return;
-      onMove(e.clientX);
-    });
-    wrap.addEventListener('pointerup', (e) => {
-      if (e.pointerId !== pointerId) return;
-      wrap.releasePointerCapture(e.pointerId);
-      onEnd();
-    });
-    wrap.addEventListener('pointercancel', (e) => {
-      if (e.pointerId !== pointerId) return;
-      onEnd();
-    });
-
-    $$('.banner-dots span').forEach((dot) => {
-      dot.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const i = Number(dot.dataset.index);
-        if (Number.isNaN(i)) return;
-        pauseAuto();
-        setBannerIndex(i);
-        startBannerAuto();
-      });
-    });
-
-    window.addEventListener('resize', () => applyBannerTransform(0, { animate: false, dragging: false }));
-  }
-
-  function startBannerAuto() {
-    clearInterval(state.bannerTimer);
-    state.bannerTimer = setInterval(() => {
-      setBannerIndex(state.bannerIndex + 1);
-    }, 4000);
+    BannerSwiper.mount($('#banner-swiper'), api.getBanners());
   }
 
   function renderQuickEntries() {
