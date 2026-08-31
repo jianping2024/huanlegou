@@ -1,3 +1,4 @@
+import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,6 +20,10 @@ export default function WebApp() {
   const [webView, setWebView] = useState<WebView | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
 
+  const hideSplash = useCallback(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (Platform.OS !== 'android') return undefined;
 
@@ -36,20 +41,32 @@ export default function WebApp() {
     setCanGoBack(nav.canGoBack);
   }, []);
 
-  const onWebViewError = useCallback((event: { nativeEvent: { description?: string } }) => {
-    const detail = event.nativeEvent.description?.trim();
-    setError(
-      detail
-        ? `页面加载失败：${detail}\n\n请检查网络，或确认页面服务器已部署。`
-        : '页面加载失败，请检查网络连接',
-    );
+  const finishLoading = useCallback(() => {
     setLoading(false);
-  }, []);
+    hideSplash();
+  }, [hideSplash]);
+
+  const onWebViewError = useCallback(
+    (event: { nativeEvent: { description?: string } }) => {
+      const detail = event.nativeEvent.description?.trim();
+      setError(
+        detail
+          ? `页面加载失败：${detail}\n\n请检查网络，或确认页面服务器已部署。`
+          : '页面加载失败，请检查网络连接',
+      );
+      finishLoading();
+    },
+    [finishLoading],
+  );
 
   const onWebViewCrash = useCallback(() => {
     setError('页面进程异常退出，请重试。');
-    setLoading(false);
-  }, []);
+    finishLoading();
+  }, [finishLoading]);
+
+  useEffect(() => {
+    if (error) hideSplash();
+  }, [error, hideSplash]);
 
   if (error) {
     return (
@@ -66,7 +83,7 @@ export default function WebApp() {
     <View style={styles.container}>
       {loading ? (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#FF5000" />
+          <ActivityIndicator size="large" color="#ffffff" />
           <Text style={styles.loadingText}>正在加载欢乐购…</Text>
         </View>
       ) : null}
@@ -82,7 +99,7 @@ export default function WebApp() {
         setSupportMultipleWindows={false}
         textZoom={100}
         onNavigationStateChange={onNavChange}
-        onLoadEnd={() => setLoading(false)}
+        onLoadEnd={finishLoading}
         onError={onWebViewError}
         onHttpError={onWebViewError}
         onRenderProcessGone={onWebViewCrash}
@@ -95,7 +112,7 @@ export default function WebApp() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FF5000',
   },
   webview: {
     flex: 1,
@@ -105,12 +122,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#FF5000',
     zIndex: 1,
   },
   loadingText: {
     marginTop: 12,
-    color: '#666',
-    fontSize: 14,
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 15,
+    fontWeight: '500',
   },
 });

@@ -285,26 +285,9 @@
     showToast(state.loggedIn ? '登录成功 · 欢迎回来' : '已退出登录');
   }
 
-  function updateMainHeaderForTab(tab) {
-    const header = $('#main-header');
-    const statusBar = $('.status-bar');
-    const app = $('#app');
-    if (!header) return;
-
-    if (tab === 'profile') {
-      header.style.display = 'none';
-      app.classList.add('profile-tab');
-      statusBar?.classList.add('profile-status');
-    } else {
-      header.style.display = 'flex';
-      header.className = 'app-header home-header';
-      app.classList.remove('profile-tab');
-      statusBar?.classList.remove('profile-status');
-    }
-  }
-
   function showToast(msg) {
     const el = $('#toast');
+    if (!el) return;
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(showToast._t);
@@ -1552,6 +1535,9 @@
   }
 
   function init() {
+    if (window.ReactNativeWebView) {
+      document.documentElement.classList.add('in-app-webview');
+    }
     renderBanners();
     renderQuickEntries();
     renderHomeCategories();

@@ -2,6 +2,12 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const { APP_VERSION, DEFAULT_WEB_APP_URL } = require('./config/defaults.js');
 
+const splash = {
+  image: './assets/splash.png',
+  resizeMode: 'cover' as const,
+  backgroundColor: '#FF5000',
+};
+
 export default ({ config }: ConfigContext): ExpoConfig =>
   ({
     ...config,
@@ -11,14 +17,11 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
-    splash: {
-      image: './assets/splash-icon.png',
-      resizeMode: 'contain',
-      backgroundColor: '#FF5000',
-    },
+    splash,
     ios: {
       supportsTablet: false,
       bundleIdentifier: 'com.huanlegou.app',
+      splash,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
@@ -26,6 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     android: {
       package: 'com.huanlegou.app',
       permissions: ['INTERNET'],
+      splash,
       adaptiveIcon: {
         backgroundColor: '#FF5000',
         foregroundImage: './assets/android-icon-foreground.png',
@@ -37,7 +41,17 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: ['expo-asset'],
+    plugins: [
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#FF5000',
+          image: './assets/splash.png',
+          resizeMode: 'cover',
+        },
+      ],
+      'expo-asset',
+    ],
     extra: {
       eas: {
         projectId: '366e6c31-8c61-4b50-bffb-8340b5019b88',

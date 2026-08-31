@@ -1,7 +1,10 @@
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import ErrorBoundary from './src/ErrorBoundary';
 import WebApp from './src/WebApp';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function App() {
   return (

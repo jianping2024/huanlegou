@@ -4,18 +4,19 @@ App 壳通过 WebView 加载这里的 HTTPS 页面。
 
 ## 一键部署
 
-**方式 A（推荐，不用找 Root Directory）**
+**方式 A（推荐）**
 
-仓库根目录已有 `vercel.json`（`"rootDirectory": "huanlegou-prototype"`），push 后 Vercel 会自动重新部署。
-
-1. 确认 GitHub 已同步最新代码
-2. Vercel 项目 → **Deployments** → 最新一条 → **Redeploy**
+1. Vercel 项目 → **Settings** → **Build and Deployment** → **Root Directory** → 填 `huanlegou-prototype` → **Save**
+2. 确认 GitHub 已同步最新代码（仓库根目录**不要**放带 `rootDirectory` 的 `vercel.json`，该字段只能在 Vercel 控制台设置）
+3. **Deployments** → 最新一条 → **Redeploy**
 
 **方式 B（新建项目时）**
 
 1. https://vercel.com/new → Import `jianping2024/huanlegou`
 2. 在 Import 页面若出现 **Root Directory** → 点 **Edit** → 选 `huanlegou-prototype`
 3. Framework 选 **Other** → Deploy
+
+（新建后同样确认 **Root Directory** = `huanlegou-prototype`。）
 
 **方式 C（在 Settings 里改，新版 UI 路径）**
 
@@ -26,7 +27,7 @@ App 壳通过 WebView 加载这里的 HTTPS 页面。
 → 填 huanlegou-prototype → Save → Redeploy
 ```
 
-找不到 Root Directory 时用 **方式 A** 即可。
+找不到 Root Directory 时用 **方式 A** 的 Settings 路径即可。
 
 ## 404 排查
 
