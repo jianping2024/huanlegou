@@ -71,6 +71,11 @@
         shadowOffset: 24,
         shadowScale: 0.92,
       },
+      // 更容易翻页，减少「半拖弹回」触发 cube animating 卡住的概率
+      threshold: 3,
+      longSwipesRatio: 0.22,
+      longSwipesMs: 280,
+      shortSwipes: true,
       grabCursor: true,
       touchStartPreventDefault: false,
       autoplay: {
