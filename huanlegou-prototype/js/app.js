@@ -91,13 +91,7 @@
   }
 
   function getOrderCounts() {
-    const counts = { 待付款: 0, 待发货: 0, 待收货: 0, 待评价: 0, 退款: 0 };
-    MOCK.orders.forEach((o) => {
-      if (o.status in counts) counts[o.status]++;
-      else if (o.status === '已完成') counts['待评价']++;
-    });
-    counts['退款'] = 1;
-    return counts;
+    return api.getOrderCounts();
   }
 
   const ORDER_STATUS_ICONS = {
@@ -228,7 +222,7 @@
 
   function renderOrdersList(statusFilter = '') {
     state.orderFilter = statusFilter;
-    let orders = [...MOCK.orders];
+    let orders = [...api.getOrders()];
     if (statusFilter && statusFilter !== '全部') {
       if (statusFilter === '待评价') {
         orders = orders.filter((o) => o.status === '已完成' || o.status === '待评价');
@@ -260,7 +254,7 @@
               </div>
               <div class="order-card-body">
                 <div class="order-card-meta">${o.items} 件商品 · ${o.time}</div>
-                <div class="order-card-total">合计 <strong>${formatPrice(o.total)}</strong></div>
+                <div class="order-card-total">合计 <strong>${api.formatPrice(o.total)}</strong></div>
               </div>
               <div class="order-card-actions">
                 ${o.status === '待付款' ? '<button type="button" class="order-btn primary" data-action="toast" data-msg="去支付 · 静态演示">去支付</button>' : ''}
@@ -327,7 +321,7 @@
         </div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
-          <div class="product-price">${formatPrice(p.price)}<small>/${p.unit}</small></div>
+          <div class="product-price">${api.formatPrice(p.price)}<small>/${p.unit}</small></div>
           <div class="product-meta">${p.minOrder}${p.unit}起批 · 已售${p.sales}</div>
           <div class="product-tags">${(p.tags || []).slice(0, 2).map((t) => `<span class="tag">${t}</span>`).join('')}</div>
         </div>
@@ -335,8 +329,9 @@
   }
 
   function renderBanners() {
+    const banners = api.getBanners();
     const wrap = $('#banner-swiper');
-    wrap.innerHTML = MOCK.banners
+    wrap.innerHTML = banners
       .map(
         (b, i) => `
       <div class="banner-slide ${i === 0 ? 'active' : ''}" style="background-image:url('${b.image}')">
@@ -350,7 +345,7 @@
 
     wrap.insertAdjacentHTML(
       'beforeend',
-      `<div class="banner-dots">${MOCK.banners.map((_, i) => `<span class="${i === 0 ? 'active' : ''}"></span>`).join('')}</div>`,
+      `<div class="banner-dots">${banners.map((_, i) => `<span class="${i === 0 ? 'active' : ''}"></span>`).join('')}</div>`,
     );
 
     startBannerAuto();
@@ -359,7 +354,7 @@
   function startBannerAuto() {
     clearInterval(state.bannerTimer);
     state.bannerTimer = setInterval(() => {
-      state.bannerIndex = (state.bannerIndex + 1) % MOCK.banners.length;
+      state.bannerIndex = (state.bannerIndex + 1) % api.getBanners().length;
       updateBanner();
     }, 4000);
   }
@@ -370,7 +365,7 @@
   }
 
   function renderQuickEntries() {
-    $('#quick-entries').innerHTML = MOCK.quickEntries
+    $('#quick-entries').innerHTML = api.getQuickEntries()
       .map(
         (e) => `
       <div class="quick-entry" data-action="toast" data-msg="${e.name} · 静态演示">
@@ -382,7 +377,7 @@
   }
 
   function renderHomeCategories() {
-    $('#home-categories').innerHTML = MOCK.categories
+    $('#home-categories').innerHTML = api.getCategories()
       .map(
         (c) => `
       <div class="category-item" data-category="${c.id}">
@@ -400,7 +395,7 @@
   }
 
   function renderCategorySidebar() {
-    $('#category-sidebar').innerHTML = MOCK.categoryTree
+    $('#category-sidebar').innerHTML = api.getCategoryTree()
       .map(
         (c, i) => `
       <div class="side-item ${i === state.categoryIndex ? 'active' : ''}" data-category-id="${c.id}">${c.name}</div>`,
@@ -410,7 +405,7 @@
   }
 
   function renderCategoryMain() {
-    const cat = MOCK.categoryTree[state.categoryIndex];
+    const cat = api.getCategoryTree()[state.categoryIndex];
     if (!cat) return;
     $('#category-main').innerHTML = `
       <div class="subcat-title">${cat.name}</div>
@@ -427,12 +422,12 @@
       </div>
       <div class="section-title"><span>热门${cat.name}</span></div>
       <div class="product-grid" id="cat-products"></div>`;
-    const filtered = MOCK.products.filter((p) => p.categoryId === cat.id);
-    renderProductGrid('#cat-products', filtered.length ? filtered : MOCK.products.slice(0, 4));
+    const filtered = api.getProducts({ categoryId: cat.id });
+    renderProductGrid('#cat-products', filtered.length ? filtered : api.getProducts({ limit: 4 }));
   }
 
   function getCategoryIndex(categoryId) {
-    const idx = MOCK.categoryTree.findIndex((c) => c.id === categoryId);
+    const idx = api.getCategoryTree().findIndex((c) => c.id === categoryId);
     return idx >= 0 ? idx : 0;
   }
 
@@ -452,7 +447,7 @@
   }
 
   function renderMarkets() {
-    $('#market-list').innerHTML = MOCK.markets
+    $('#market-list').innerHTML = api.getMarkets()
       .map(
         (m) => `
       <div class="market-card" data-action="toast" data-msg="${m.name} · 静态演示">
@@ -476,18 +471,14 @@
   function renderCartRecommend() {
     const el = $('#cart-recommend');
     if (!el) return;
-    const picks = MOCK.products.slice(0, 4);
+    const picks = api.getProducts({ limit: 4 });
     el.innerHTML = `
       <div class="section-title section-title-row"><span>猜你想进</span></div>
       <div class="product-grid cart-rec-grid">${picks.map(productCardHTML).join('')}</div>`;
   }
 
   function renderCart() {
-    const items = MOCK.cart.map((item) => {
-      const p = getProduct(item.productId);
-      const sub = p.price * item.qty;
-      return { ...item, product: p, sub };
-    });
+    const items = api.getCartLineItems();
     const total = items.reduce((s, i) => s + i.sub, 0);
 
     if (!items.length) {
@@ -513,7 +504,7 @@
           <div class="cart-name">${item.product.name}</div>
           <div class="cart-spec-row" data-action="open-spec" data-intent="select">${item.spec} ›</div>
           <div class="cart-bottom">
-            <span class="cart-price">${formatPrice(item.product.price)}<small>/${item.product.unit}</small></span>
+            <span class="cart-price">${api.formatPrice(item.product.price)}<small>/${item.product.unit}</small></span>
             <div class="cart-qty-stepper">
               <button type="button" class="qty-btn-sm" data-action="toast" data-msg="数量 · 静态演示">−</button>
               <span>${item.qty}</span>
@@ -528,7 +519,7 @@
     $('#cart-footer').innerHTML = `
       <div class="cart-select-all" data-action="toast" data-msg="全选 · 静态演示"><span class="cart-check checked">✓</span> 全选</div>
       <div class="cart-footer-right">
-        <div class="total">合计 <strong>${formatPrice(total)}</strong></div>
+        <div class="total">合计 <strong>${api.formatPrice(total)}</strong></div>
         <button type="button" class="btn-primary cart-checkout" data-action="go-checkout">去结算(${items.length})</button>
       </div>`;
     renderCartRecommend();
@@ -558,7 +549,7 @@
 
   function renderSearch() {
     renderSearchHistory();
-    $('#hot-keywords').innerHTML = MOCK.hotKeywords
+    $('#hot-keywords').innerHTML = api.getHotKeywords()
       .map((k) => `<span class="keyword-tag hot" data-keyword="${k}">${k}</span>`)
       .join('');
     doSearch('');
@@ -569,19 +560,12 @@
     const label = $('#search-result-label');
     if (label) label.textContent = q ? `“${q}” 的搜索结果` : '推荐商品';
     if (q) addSearchHistory(q);
-    const results = q
-      ? MOCK.products.filter(
-          (p) =>
-            p.name.includes(q) ||
-            p.shop.includes(q) ||
-            (p.tags && p.tags.some((t) => t.includes(q))),
-        )
-      : MOCK.products;
+    const results = api.getProducts({ query: q });
     renderProductGrid('#search-results', results);
   }
 
   function renderDetail(productId) {
-    const p = getProduct(productId);
+    const p = api.getProduct(productId);
     if (!p) return;
     state.currentProductId = productId;
     state.galleryIndex = 0;
@@ -589,7 +573,7 @@
     state.sheetQty = p.minOrder;
 
     const originPrice = (p.price * 1.35).toFixed(2);
-    const recommends = MOCK.products.filter((x) => x.id !== productId).slice(0, 4);
+    const recommends = api.getProducts({ excludeId: productId, limit: 4 });
     const reviews = [
       { user: '采购商***8', text: '质量很好，混色发货均匀，会回购', tag: '回头客' },
       { user: '义乌***2', text: '老板态度好，48小时发货，推荐', tag: '已购100+件' },
@@ -627,7 +611,7 @@
       </div>
       <div class="detail-body">
         <div class="price-row">
-          <span class="detail-price">${formatPrice(p.price)}<small>/${p.unit}</small></span>
+          <span class="detail-price">${api.formatPrice(p.price)}<small>/${p.unit}</small></span>
           <span class="price-origin">¥${originPrice}</span>
           <span class="wholesale-badge">批发价</span>
         </div>
@@ -663,12 +647,12 @@
         </div>
         <div class="detail-cell" data-action="toast" data-msg="阶梯价格 · 静态演示">
           <span class="cell-label">阶梯价</span>
-          <span class="cell-value">${p.tierPrices.map((t) => `${t.qty} ${formatPrice(t.price)}`).join(' · ')}</span>
+          <span class="cell-value">${p.tierPrices.map((t) => `${t.qty} ${api.formatPrice(t.price)}`).join(' · ')}</span>
           <span class="cell-arrow">›</span>
         </div>
       </div>
       <div class="shop-bar" data-shop="${p.shopId}">
-        <div class="shop-avatar"><img src="${getShop(p.shopId)?.avatar || p.image}" alt="" loading="lazy" /></div>
+        <div class="shop-avatar"><img src="${api.getShop(p.shopId)?.avatar || p.image}" alt="" loading="lazy" /></div>
         <div class="shop-bar-info">
           <div class="shop-name">${p.shop}</div>
           <div class="shop-meta">${p.market} · 进店逛逛 ›</div>
@@ -781,14 +765,14 @@
   }
 
   function updateCartBadges() {
-    const count = MOCK.cart.length;
+    const count = api.getCartCount();
     $$('#cart-badge, #detail-cart-badge, .footer-cart-badge').forEach((el) => {
       if (el) el.textContent = count;
     });
   }
 
   function updateSelectedSpecDisplay() {
-    const p = getProduct(state.currentProductId);
+    const p = api.getProduct(state.currentProductId);
     const text = $('#selected-spec-text');
     if (p && text) {
       text.textContent = `${state.selectedSpec}，${state.sheetQty}${p.unit}`;
@@ -796,13 +780,13 @@
   }
 
   function getSheetTotalPrice() {
-    const p = getProduct(state.currentProductId);
+    const p = api.getProduct(state.currentProductId);
     if (!p) return 0;
     return p.price * state.sheetQty;
   }
 
   function renderSpecSheetBody() {
-    const p = getProduct(state.currentProductId);
+    const p = api.getProduct(state.currentProductId);
     if (!p) return;
     $('#sheet-body').innerHTML = `
       <div class="sheet-spec-group">
@@ -820,20 +804,20 @@
         </div>
         <span class="qty-hint">${p.minOrder}${p.unit}起批</span>
       </div>
-      <div class="sheet-subtotal">小计 <strong id="sheet-subtotal">${formatPrice(getSheetTotalPrice())}</strong></div>`;
+      <div class="sheet-subtotal">小计 <strong id="sheet-subtotal">${api.formatPrice(getSheetTotalPrice())}</strong></div>`;
   }
 
   function updateSpecSheetUI() {
-    const p = getProduct(state.currentProductId);
+    const p = api.getProduct(state.currentProductId);
     if (!p) return;
     const thumb = p.images[state.galleryIndex] || p.image;
     $('#sheet-thumb').src = thumb;
-    $('#sheet-price').textContent = `${formatPrice(p.price)}/${p.unit}`;
+    $('#sheet-price').textContent = `${api.formatPrice(p.price)}/${p.unit}`;
     $('#sheet-stock').textContent = `库存充足 · ${p.minOrder}${p.unit}起批`;
     const qtyEl = $('#sheet-qty-num');
     if (qtyEl) qtyEl.textContent = state.sheetQty;
     const subtotalEl = $('#sheet-subtotal');
-    if (subtotalEl) subtotalEl.textContent = formatPrice(getSheetTotalPrice());
+    if (subtotalEl) subtotalEl.textContent = api.formatPrice(getSheetTotalPrice());
     $$('#sheet-body .spec-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.spec === state.selectedSpec);
     });
@@ -843,7 +827,7 @@
   }
 
   function openSpecSheet(intent = 'select') {
-    const p = getProduct(state.currentProductId);
+    const p = api.getProduct(state.currentProductId);
     if (!p) return;
     state.sheetIntent = intent;
     state.sheetQty = Math.max(p.minOrder, state.sheetQty || p.minOrder);
@@ -862,7 +846,7 @@
   }
 
   function adjustSheetQty(delta) {
-    const p = getProduct(state.currentProductId);
+    const p = api.getProduct(state.currentProductId);
     if (!p) return;
     const step = p.minOrder >= 100 ? 10 : 1;
     const next = state.sheetQty + delta * step;
@@ -871,18 +855,13 @@
   }
 
   function addToCart(productId, qty, spec) {
-    const existing = MOCK.cart.find((i) => i.productId === productId && i.spec === spec);
-    if (existing) {
-      existing.qty += qty;
-    } else {
-      MOCK.cart.push({ productId, qty, spec });
-    }
+    api.addToCart(productId, qty, spec);
     updateCartBadges();
     renderCart();
   }
 
   function confirmSpecSheet() {
-    const p = getProduct(state.currentProductId);
+    const p = api.getProduct(state.currentProductId);
     if (!p) return;
     updateSelectedSpecDisplay();
     closeSpecSheet();
@@ -903,13 +882,7 @@
   }
 
   function getCartLineItems() {
-    return MOCK.cart
-      .map((item) => {
-        const product = getProduct(item.productId);
-        if (!product) return null;
-        return { ...item, product, sub: product.price * item.qty };
-      })
-      .filter(Boolean);
+    return api.getCartLineItems();
   }
 
   function openCartCheckout() {
@@ -931,9 +904,9 @@
       return;
     }
 
-    const p = getProduct(state.currentProductId);
+    const p = api.getProduct(state.currentProductId);
     if (!p) return;
-    const shop = getShop(p.shopId);
+    const shop = api.getShop(p.shopId);
     const total = getSheetTotalPrice();
 
     $('#checkout-content').innerHTML = `
@@ -955,7 +928,7 @@
           <div class="checkout-item-name">${p.name}</div>
           <div class="checkout-item-spec">${state.selectedSpec}</div>
           <div class="checkout-item-bottom">
-            <span class="checkout-item-price">${formatPrice(p.price)}</span>
+            <span class="checkout-item-price">${api.formatPrice(p.price)}</span>
             <span class="checkout-item-qty">×${state.sheetQty}</span>
           </div>
         </div>
@@ -967,11 +940,11 @@
       </div>
       <div class="checkout-summary">
         <span>共 ${state.sheetQty}${p.unit}，合计</span>
-        <strong>${formatPrice(total)}</strong>
+        <strong>${api.formatPrice(total)}</strong>
       </div>`;
 
     $('#checkout-footer').innerHTML = `
-      <div class="checkout-total">应付 <strong>${formatPrice(total)}</strong></div>
+      <div class="checkout-total">应付 <strong>${api.formatPrice(total)}</strong></div>
       <button type="button" class="btn-primary checkout-submit" data-action="submit-order">提交订单</button>`;
 
     $('#sub-title').textContent = '确认订单';
@@ -994,7 +967,7 @@
       </div>
       ${items
         .map((item) => {
-          const shop = getShop(item.product.shopId);
+          const shop = api.getShop(item.product.shopId);
           return `
       <div class="checkout-shop-bar">
         <span class="checkout-shop-name">${shop?.name || item.product.shop}</span>
@@ -1006,7 +979,7 @@
           <div class="checkout-item-name">${item.product.name}</div>
           <div class="checkout-item-spec">${item.spec}</div>
           <div class="checkout-item-bottom">
-            <span class="checkout-item-price">${formatPrice(item.product.price)}</span>
+            <span class="checkout-item-price">${api.formatPrice(item.product.price)}</span>
             <span class="checkout-item-qty">×${item.qty}</span>
           </div>
         </div>
@@ -1020,11 +993,11 @@
       </div>
       <div class="checkout-summary">
         <span>共 ${totalQty} 件，合计</span>
-        <strong>${formatPrice(total)}</strong>
+        <strong>${api.formatPrice(total)}</strong>
       </div>`;
 
     $('#checkout-footer').innerHTML = `
-      <div class="checkout-total">应付 <strong>${formatPrice(total)}</strong></div>
+      <div class="checkout-total">应付 <strong>${api.formatPrice(total)}</strong></div>
       <button type="button" class="btn-primary checkout-submit" data-action="submit-order">提交订单</button>`;
 
     $('#sub-title').textContent = '确认订单';
@@ -1035,14 +1008,8 @@
       const items = getCartLineItems();
       if (!items.length) return;
       const total = items.reduce((sum, item) => sum + item.sub, 0);
-      MOCK.orders.unshift({
-        id: `o${Date.now()}`,
-        status: '待付款',
-        total,
-        items: items.length,
-        time: new Date().toISOString().slice(0, 10),
-      });
-      MOCK.cart = [];
+      api.createOrder({ total, items: items.length });
+      api.clearCart();
       updateCartBadges();
       renderCart();
       renderProfile();
@@ -1054,17 +1021,11 @@
       return;
     }
 
-    const p = getProduct(state.currentProductId);
+    const p = api.getProduct(state.currentProductId);
     if (!p) return;
     const total = getSheetTotalPrice();
     addToCart(p.id, state.sheetQty, state.selectedSpec);
-    MOCK.orders.unshift({
-      id: `o${Date.now()}`,
-      status: '待付款',
-      total,
-      items: 1,
-      time: new Date().toISOString().slice(0, 10),
-    });
+    api.createOrder({ total, items: 1 });
     renderProfile();
     showToast('订单提交成功 · 请完成付款');
     setTimeout(() => {
@@ -1115,7 +1076,7 @@
       }
     }
     const sorted = sortListProducts(state.listProducts, state.listSort, state.listPriceAsc);
-    renderProductGrid('#list-products', sorted.length ? sorted : MOCK.products.slice(0, 4));
+    renderProductGrid('#list-products', sorted.length ? sorted : api.getProducts({ limit: 4 }));
   }
 
   function initProductGallery(total) {
@@ -1166,10 +1127,10 @@
   }
 
   function renderShop(shopId) {
-    const shop = getShop(shopId);
+    const shop = api.getShop(shopId);
     if (!shop) return;
     state.currentShopId = shopId;
-    const products = getProductsByShop(shopId);
+    const products = api.getProductsByShop(shopId);
 
     $('#shop-content').innerHTML = `
       <div class="shop-banner-wrap">
@@ -1204,20 +1165,20 @@
       </div>
       <div class="product-grid shop-product-grid" id="shop-products"></div>`;
 
-    renderProductGrid('#shop-products', products.length ? products : MOCK.products.slice(0, 4));
+    renderProductGrid('#shop-products', products.length ? products : api.getProducts({ limit: 4 }));
     $('#sub-title').textContent = shop.name;
   }
 
   function renderList(title, categoryId) {
     $('#sub-title').textContent = title || '商品列表';
     let products = categoryId
-      ? MOCK.products.filter((p) => p.categoryId === categoryId)
-      : MOCK.products;
+      ? api.getProducts({ categoryId })
+      : api.getProducts();
     if (title && products.length > 1) {
       const narrowed = products.filter((p) => p.name.includes(title) || title.includes(p.name.slice(0, 2)));
       if (narrowed.length) products = narrowed;
     }
-    state.listProducts = products.length ? products : MOCK.products.slice(0, 4);
+    state.listProducts = products.length ? products : api.getProducts({ limit: 4 });
     state.listSort = 'default';
     state.listPriceAsc = true;
     $$('#list-filter-bar .filter-item').forEach((item) => {
@@ -1338,8 +1299,9 @@
   }
 
   function initPromoImages() {
-    $('#promo-img-1').src = MOCK.products[0].image;
-    $('#promo-img-2').src = MOCK.products[4].image;
+    const products = api.getProducts();
+    $('#promo-img-1').src = products[0].image;
+    $('#promo-img-2').src = products[4].image;
   }
 
   function handleAppClick(e) {
@@ -1398,7 +1360,7 @@
     }
 
     if (e.target.closest('[data-action="nav-shop"]') && state.currentProductId) {
-      const p = getProduct(state.currentProductId);
+      const p = api.getProduct(state.currentProductId);
       if (p) pushScreen('screen-shop', () => renderShop(p.shopId), 'immersive');
       return;
     }
@@ -1516,7 +1478,7 @@
     document.addEventListener('click', handleAppClick);
 
     $('#banner-swiper')?.addEventListener('click', () => {
-      state.bannerIndex = (state.bannerIndex + 1) % MOCK.banners.length;
+      state.bannerIndex = (state.bannerIndex + 1) % api.getBanners().length;
       updateBanner();
     });
 
@@ -1534,7 +1496,7 @@
     renderBanners();
     renderQuickEntries();
     renderHomeCategories();
-    renderProductGrid('#home-products', MOCK.products);
+    renderProductGrid('#home-products', api.getProducts());
     renderMarkets();
     renderCart();
     renderProfile();

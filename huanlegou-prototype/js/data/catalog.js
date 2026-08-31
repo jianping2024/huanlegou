@@ -1,7 +1,7 @@
-/* 欢乐购静态原型 — 本地真实商品图（离线可用，无黑图） */
+/* 欢乐购 — 静态商品目录（只读，不含购物车/订单运行时状态） */
 const A = (path) => `assets/${path}`;
 
-const MOCK = {
+const Catalog = {
   banners: [
     {
       id: 1,
@@ -465,13 +465,15 @@ const MOCK = {
       banner: A('shops/s6-banner.jpg'),
     },
   },
+};
 
+/** 会话初始数据（购物车、订单 — 运行时由 AppStore 维护） */
+const SessionSeed = {
   cart: [
     { productId: 'p1', qty: 200, spec: '混色' },
     { productId: 'p3', qty: 500, spec: '黑色' },
     { productId: 'p7', qty: 100, spec: '混色12件套' },
   ],
-
   orders: [
     { id: 'o1', status: '待付款', total: 345.0, items: 2, time: '2026-08-28' },
     { id: 'o2', status: '待发货', total: 1280.0, items: 3, time: '2026-08-25' },
@@ -479,20 +481,3 @@ const MOCK = {
     { id: 'o4', status: '已完成', total: 892.0, items: 2, time: '2026-08-15' },
   ],
 };
-
-function getProduct(id) {
-  return MOCK.products.find((p) => p.id === id);
-}
-
-function getShop(id) {
-  return MOCK.shops[id];
-}
-
-function formatPrice(n) {
-  if (n < 1) return '¥' + n.toFixed(2);
-  return '¥' + n.toFixed(n % 1 === 0 ? 0 : 2);
-}
-
-function getProductsByShop(shopId) {
-  return MOCK.products.filter((p) => p.shopId === shopId);
-}

@@ -25,7 +25,7 @@
     "build:android": "npx eas-cli@latest build --platform android --profile preview --non-interactive",
     "build:ios": "npx eas-cli@latest build --platform ios --profile preview --non-interactive",
     "device:register": "npx eas-cli@latest device:create",
-    "build:android:local": "eas build --platform android --profile preview --local"
+    "build:android:local": "bash scripts/build-android-local.sh"
   },
   "private": true
 }

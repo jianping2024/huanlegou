@@ -33,10 +33,53 @@ EXPO_PUBLIC_WEB_APP_URL=https://你的域名.vercel.app npm run build:android
 
 ## 打 Android APK
 
+### 云端（EAS 免费队列，可能等 10–30 分钟）
+
 ```bash
 cd huanlegou-app
 export EXPO_TOKEN="..."
 npm run build:android
+```
+
+### 本地（推荐，不排队）
+
+**环境（Mac，一次性）：**
+
+```bash
+brew install --cask android-commandlinetools
+# ~/.zshrc 需有：
+#   export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+#   export PATH=$PATH:$ANDROID_HOME/platform-tools:...
+
+sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+yes | sdkmanager --licenses
+
+eas login   # 或 export EXPO_TOKEN=...
+```
+
+**打包：**
+
+```bash
+cd huanlegou-app
+npm run build:android:local   # 脚本会自动设置 ANDROID_HOME + JAVA_HOME
+# 产物：当前目录 build-*.apk
+adb install -r build-*.apk
+```
+
+**JDK 要求：** 必须用标准 JDK 17（Corretto / Temurin），**不能用 GraalVM**。  
+若 Gradle 报 `JdkImageTransform` / `jlink` 失败，确认：
+
+```bash
+echo $JAVA_HOME
+# 应类似 .../corretto-17... 或 .../temurin-17...
+java -version
+```
+
+若 `JAVA_HOME` 指向 GraalVM，执行：
+
+```bash
+export JAVA_HOME="$HOME/Library/Java/JavaVirtualMachines/corretto-17.0.8/Contents/Home"
+npm run build:android:local
 ```
 
 ---
