@@ -26,22 +26,14 @@ huanlegou-app (WebView)  ───────────────┘
 打其他环境包时：
 
 ```bash
-EXPO_PUBLIC_WEB_APP_URL=https://你的域名.vercel.app npm run build:android
+EXPO_PUBLIC_WEB_APP_URL=https://你的域名.vercel.app npm run build:android:local
 ```
 
 ---
 
-## 打 Android APK
+## 打 Android APK（本地）
 
-### 云端（EAS 免费队列，可能等 10–30 分钟）
-
-```bash
-cd huanlegou-app
-export EXPO_TOKEN="..."
-npm run build:android
-```
-
-### 本地（推荐，不排队）
+不在 GitHub Actions 触发 EAS 云端队列；统一本地打包。
 
 **环境（Mac，一次性）：**
 
