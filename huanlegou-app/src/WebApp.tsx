@@ -4,14 +4,14 @@ import {
   BackHandler,
   Linking,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
-import { APP_WEB_URL } from './config/appWebUrl';
+import { APP_WEB_HOME } from './config/appWebUrl';
+import ErrorScreen from './ui/ErrorScreen';
 
 export default function WebApp() {
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +40,8 @@ export default function WebApp() {
     const detail = event.nativeEvent.description?.trim();
     setError(
       detail
-        ? `页面加载失败：${detail}\n\n请检查网络，或确认页面服务器已部署：${APP_WEB_URL}`
-        : `页面加载失败，请检查网络连接`,
+        ? `页面加载失败：${detail}\n\n请检查网络，或确认页面服务器已部署。`
+        : '页面加载失败，请检查网络连接',
     );
     setLoading(false);
   }, []);
@@ -53,27 +53,26 @@ export default function WebApp() {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorTitle}>加载失败</Text>
-        <Text style={styles.errorText}>{error}</Text>
-        <Pressable style={styles.browserBtn} onPress={() => Linking.openURL(APP_WEB_URL)}>
-          <Text style={styles.browserBtnText}>在浏览器中打开</Text>
-        </Pressable>
-      </View>
+      <ErrorScreen
+        title="加载失败"
+        message={error}
+        actionLabel="在浏览器中打开"
+        onAction={() => Linking.openURL(APP_WEB_HOME)}
+      />
     );
   }
 
   return (
     <View style={styles.container}>
-      {loading && (
+      {loading ? (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#FF5000" />
           <Text style={styles.loadingText}>正在加载欢乐购…</Text>
         </View>
-      )}
+      ) : null}
       <WebView
         ref={setWebView}
-        source={{ uri: APP_WEB_URL }}
+        source={{ uri: APP_WEB_HOME }}
         style={styles.webview}
         originWhitelist={['https://*', 'http://*']}
         domStorageEnabled
@@ -103,45 +102,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
     zIndex: 1,
   },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    padding: 24,
-  },
   loadingText: {
     marginTop: 12,
     color: '#666',
     fontSize: 14,
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  errorText: {
-    color: '#999',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  browserBtn: {
-    marginTop: 20,
-    backgroundColor: '#FF5000',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  browserBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

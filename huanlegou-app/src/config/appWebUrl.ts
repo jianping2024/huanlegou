@@ -1,16 +1,19 @@
 import Constants from 'expo-constants';
+import { DEFAULT_WEB_APP_URL } from './constants';
 
-const DEFAULT_WEB_APP_URL = 'https://huanlegou.vercel.app';
+function stripTrailingSlash(url: string): string {
+  return url.replace(/\/$/, '');
+}
 
-/** App WebView 加载的远程页面根地址（index.html） */
+/** 远程页面根地址（无末尾 /） */
 export function getAppWebUrl(): string {
   const fromEnv = process.env.EXPO_PUBLIC_WEB_APP_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, '');
+  if (fromEnv) return stripTrailingSlash(fromEnv);
 
   const fromExtra = Constants.expoConfig?.extra?.webAppUrl as string | undefined;
-  if (fromExtra?.trim()) return fromExtra.trim().replace(/\/$/, '');
+  if (fromExtra?.trim()) return stripTrailingSlash(fromExtra.trim());
 
   return DEFAULT_WEB_APP_URL;
 }
 
-export const APP_WEB_URL = `${getAppWebUrl()}/index.html`;
+export const APP_WEB_HOME = `${getAppWebUrl()}/index.html`;

@@ -21,6 +21,7 @@
     loggedIn: false,
     orderFilter: '',
     searchHistory: ['钥匙扣', '文具套装', '毛绒玩具'],
+    checkoutSource: 'buy',
   };
 
   const QUICK_ENTRY_SVGS = {
@@ -552,7 +553,7 @@
       <div class="cart-select-all" data-action="toast" data-msg="全选 · 静态演示"><span class="cart-check checked">✓</span> 全选</div>
       <div class="cart-footer-right">
         <div class="total">合计 <strong>${formatPrice(total)}</strong></div>
-        <button type="button" class="btn-primary cart-checkout" data-action="toast" data-msg="结算 · 静态演示">去结算(${items.length})</button>
+        <button type="button" class="btn-primary cart-checkout" data-action="go-checkout">去结算(${items.length})</button>
       </div>`;
     renderCartRecommend();
   }
@@ -917,6 +918,7 @@
     }
 
     if (state.sheetIntent === 'buy') {
+      state.checkoutSource = 'buy';
       pushScreen('screen-checkout', () => renderCheckout());
       return;
     }
@@ -924,7 +926,35 @@
     showToast(`已选：${state.selectedSpec}，${state.sheetQty}${p.unit}`);
   }
 
+  function getCartLineItems() {
+    return MOCK.cart
+      .map((item) => {
+        const product = getProduct(item.productId);
+        if (!product) return null;
+        return { ...item, product, sub: product.price * item.qty };
+      })
+      .filter(Boolean);
+  }
+
+  function openCartCheckout() {
+    const items = getCartLineItems();
+    if (!items.length) {
+      showToast('进货单是空的');
+      return;
+    }
+    state.checkoutSource = 'cart';
+    state.currentProductId = items[0].productId;
+    state.selectedSpec = items[0].spec;
+    state.sheetQty = items[0].qty;
+    pushScreen('screen-checkout', () => renderCheckout());
+  }
+
   function renderCheckout() {
+    if (state.checkoutSource === 'cart') {
+      renderCartCheckout();
+      return;
+    }
+
     const p = getProduct(state.currentProductId);
     if (!p) return;
     const shop = getShop(p.shopId);
@@ -971,7 +1001,83 @@
     $('#sub-title').textContent = '确认订单';
   }
 
+  function renderCartCheckout() {
+    const items = getCartLineItems();
+    if (!items.length) return;
+    const total = items.reduce((sum, item) => sum + item.sub, 0);
+    const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
+
+    $('#checkout-content').innerHTML = `
+      <div class="checkout-address">
+        <div class="checkout-addr-icon">📍</div>
+        <div class="checkout-addr-info">
+          <div class="checkout-addr-name">张先生 138****6688</div>
+          <div class="checkout-addr-text">浙江省金华市义乌市稠州北路999号 · 义乌国际商贸城</div>
+        </div>
+        <span class="cell-arrow">›</span>
+      </div>
+      ${items
+        .map((item) => {
+          const shop = getShop(item.product.shopId);
+          return `
+      <div class="checkout-shop-bar">
+        <span class="checkout-shop-name">${shop?.name || item.product.shop}</span>
+        <span class="checkout-shop-tag">实体认证</span>
+      </div>
+      <div class="checkout-item">
+        <img src="${item.product.images[0] || item.product.image}" alt="" />
+        <div class="checkout-item-info">
+          <div class="checkout-item-name">${item.product.name}</div>
+          <div class="checkout-item-spec">${item.spec}</div>
+          <div class="checkout-item-bottom">
+            <span class="checkout-item-price">${formatPrice(item.product.price)}</span>
+            <span class="checkout-item-qty">×${item.qty}</span>
+          </div>
+        </div>
+      </div>`;
+        })
+        .join('')}
+      <div class="checkout-cells">
+        <div class="checkout-cell"><span>配送方式</span><span>快递免运费</span></div>
+        <div class="checkout-cell"><span>预计发货</span><span>48小时内</span></div>
+        <div class="checkout-cell"><span>买家留言</span><span class="muted">选填 ›</span></div>
+      </div>
+      <div class="checkout-summary">
+        <span>共 ${totalQty} 件，合计</span>
+        <strong>${formatPrice(total)}</strong>
+      </div>`;
+
+    $('#checkout-footer').innerHTML = `
+      <div class="checkout-total">应付 <strong>${formatPrice(total)}</strong></div>
+      <button type="button" class="btn-primary checkout-submit" data-action="submit-order">提交订单</button>`;
+
+    $('#sub-title').textContent = '确认订单';
+  }
+
   function submitOrder() {
+    if (state.checkoutSource === 'cart') {
+      const items = getCartLineItems();
+      if (!items.length) return;
+      const total = items.reduce((sum, item) => sum + item.sub, 0);
+      MOCK.orders.unshift({
+        id: `o${Date.now()}`,
+        status: '待付款',
+        total,
+        items: items.length,
+        time: new Date().toISOString().slice(0, 10),
+      });
+      MOCK.cart = [];
+      updateCartBadges();
+      renderCart();
+      renderProfile();
+      showToast('订单提交成功 · 请完成付款');
+      setTimeout(() => {
+        while (state.stack.length) popScreen();
+        showTab('profile');
+      }, 800);
+      return;
+    }
+
     const p = getProduct(state.currentProductId);
     if (!p) return;
     const total = getSheetTotalPrice();
@@ -1349,6 +1455,11 @@
 
     if (e.target.closest('[data-action="go-cart"]')) {
       goCartTab();
+      return;
+    }
+
+    if (e.target.closest('[data-action="go-checkout"]')) {
+      openCartCheckout();
       return;
     }
 

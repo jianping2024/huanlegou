@@ -38,15 +38,13 @@ App 壳通过 WebView 加载这里的 HTTPS 页面。
 
 ## 配置 App
 
-在 `huanlegou-app/eas.json` 的 `preview.env` 里改：
+默认值在 `huanlegou-app/src/config/constants.ts` 的 `DEFAULT_WEB_APP_URL`。
 
-```json
-"EXPO_PUBLIC_WEB_APP_URL": "https://你的域名.vercel.app"
+其他环境打包装：
+
+```bash
+EXPO_PUBLIC_WEB_APP_URL=https://你的域名.vercel.app npm run build:android
 ```
-
-或在 `huanlegou-app/app.config.ts` 里改 `DEFAULT_WEB_APP_URL`。
-
-然后重新 `npm run build:android`。
 
 ## 本地预览服务器
 

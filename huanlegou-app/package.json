@@ -1,6 +1,6 @@
 {
   "name": "huanlegou",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "main": "index.ts",
   "dependencies": {
     "expo": "~57.0.18",
@@ -9,7 +9,6 @@
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",
-    "react-native-safe-area-context": "~5.7.0",
     "react-native-webview": "13.16.1"
   },
   "devDependencies": {
@@ -18,7 +17,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "sync:web": "node scripts/sync-web-prototype.mjs",
+    "typecheck": "tsc --noEmit",
     "start": "expo start",
     "android": "expo run:android",
     "build:android": "npx eas-cli@latest build --platform android --profile preview --non-interactive",
