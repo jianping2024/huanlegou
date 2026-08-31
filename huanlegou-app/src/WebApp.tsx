@@ -1,5 +1,5 @@
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Linking, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -7,23 +7,20 @@ import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
 import { APP_WEB_HOME } from './config/appWebUrl';
 import BrandedSplash from './ui/BrandedSplash';
 import ErrorScreen from './ui/ErrorScreen';
+import { buildInAppWebBootstrapScript, resolveBottomInset } from './webview/safeArea';
 
 const LOAD_TIMEOUT_MS = 25_000;
+const IN_APP_WEB_BOOTSTRAP = buildInAppWebBootstrapScript();
 
 export default function WebApp() {
   const insets = useSafeAreaInsets();
+  const bottomInset = resolveBottomInset(insets.bottom);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [webViewKey, setWebViewKey] = useState(0);
   const [webView, setWebView] = useState<WebView | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const injectedBeforeContentLoaded = useMemo(
-    () =>
-      `(function(){var d=document.documentElement;d.classList.add('in-app-webview');d.style.setProperty('--safe-top','${insets.top}px');d.style.setProperty('--safe-bottom','${insets.bottom}px');})();true;`,
-    [insets.top, insets.bottom],
-  );
 
   const clearLoadTimer = useCallback(() => {
     if (loadTimerRef.current) {
@@ -75,7 +72,8 @@ export default function WebApp() {
   const finishLoading = useCallback(() => {
     clearLoadTimer();
     setLoading(false);
-  }, [clearLoadTimer]);
+    webView?.injectJavaScript(IN_APP_WEB_BOOTSTRAP);
+  }, [clearLoadTimer, webView]);
 
   const onWebViewError = useCallback(
     (event: { nativeEvent: { description?: string } }) => {
@@ -101,7 +99,7 @@ export default function WebApp() {
 
   if (error) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: bottomInset }]}>
         <ErrorScreen
           title="加载失败"
           message={error}
@@ -116,7 +114,12 @@ export default function WebApp() {
 
   return (
     <View style={styles.root}>
-      <View style={[styles.webArea, { paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.webArea,
+          { paddingTop: insets.top, paddingBottom: bottomInset },
+        ]}
+      >
         <WebView
           key={webViewKey}
           ref={setWebView}
@@ -129,7 +132,7 @@ export default function WebApp() {
           mixedContentMode="always"
           setSupportMultipleWindows={false}
           textZoom={100}
-          injectedJavaScriptBeforeContentLoaded={injectedBeforeContentLoaded}
+          injectedJavaScriptBeforeContentLoaded={IN_APP_WEB_BOOTSTRAP}
           onNavigationStateChange={onNavChange}
           onLoadEnd={finishLoading}
           onError={onWebViewError}
@@ -150,6 +153,7 @@ const styles = StyleSheet.create({
   },
   webArea: {
     flex: 1,
+    backgroundColor: '#ffffff',
   },
   webview: {
     flex: 1,

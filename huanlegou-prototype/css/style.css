@@ -29,6 +29,11 @@
   --lh-body: 1.5;
 }
 
+/* App WebView：底部安全区由原生 webArea.paddingBottom 负责，网页侧不再叠加 */
+html.in-app-webview {
+  --safe-bottom: 0px;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

@@ -1490,9 +1490,6 @@
   }
 
   function init() {
-    if (window.ReactNativeWebView) {
-      document.documentElement.classList.add('in-app-webview');
-    }
     renderBanners();
     renderQuickEntries();
     renderHomeCategories();
