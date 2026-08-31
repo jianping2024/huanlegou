@@ -1289,6 +1289,9 @@
   }
 
   function handleAppClick(e) {
+    // Banner 自己处理跳转；避免与全局商品点击冲突
+    if (e.target.closest('#banner-swiper')) return;
+
     const activeScreen = $('.screen.active');
     if (!activeScreen) return;
 

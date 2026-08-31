@@ -45,7 +45,10 @@
   BannerSwiperInstance.prototype.bindSingleClick = function () {
     const slide = this.wrap.querySelector('.banner-slide');
     if (!slide) return;
-    this._onSingleClick = () => this.emitNavigate(this.banners[0]);
+    this._onSingleClick = (e) => {
+      e.stopPropagation();
+      setTimeout(() => this.emitNavigate(this.banners[0]), 0);
+    };
     slide.addEventListener('click', this._onSingleClick);
   };
 
@@ -114,11 +117,18 @@
         touchStart: () => this.wrap.classList.add('is-dragging'),
         touchEnd: () => this.wrap.classList.remove('is-dragging'),
         transitionEnd: () => this.syncKenBurns(),
-        // Swiper 在滑动后会抑制 click；只有真正点击才触发
+        // Swiper 在滑动后会抑制 click；只有真正点击才触发。
+        // 必须异步跳转：若在 touchEnd/click 同步 pushScreen，后续 click 会落到新页商品卡上误开详情。
         click: (swiper, event) => {
           if (event.target.closest('.banner-dots, .banner-dot')) return;
-          const banner = this.banners[swiper.realIndex];
-          this.emitNavigate(banner);
+          event.stopPropagation?.();
+          const slide = swiper.clickedSlide;
+          const bannerId = slide?.getAttribute?.('data-banner-id');
+          const banner =
+            (bannerId && this.banners.find((b) => String(b.id) === String(bannerId))) ||
+            this.banners[swiper.realIndex];
+          const target = banner;
+          setTimeout(() => this.emitNavigate(target), 0);
         },
       },
     });

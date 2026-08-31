@@ -23,7 +23,7 @@ const Catalog = {
       title: '360°全景看店',
       subtitle: '实体市场 · 诚信保障',
       image: A('banners/b3.jpg'),
-      link: { type: 'product', productId: 'p1' },
+      link: { type: 'shop', shopId: 's1' },
     },
   ],
 
