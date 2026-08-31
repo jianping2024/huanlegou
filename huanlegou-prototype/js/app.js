@@ -7,7 +7,6 @@
     bannerIndex: 0,
     categoryIndex: 0,
     currentProductId: null,
-    currentShopId: null,
     searchQuery: '',
     galleryIndex: 0,
     bannerTimer: null,
@@ -90,10 +89,6 @@
     root.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
   }
 
-  function getOrderCounts() {
-    return api.getOrderCounts();
-  }
-
   const ORDER_STATUS_ICONS = {
     待付款: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>',
     待发货: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7.7L12 12l8.7-4.3M12 22V12"/></svg>',
@@ -105,7 +100,7 @@
   function renderProfile() {
     const root = $('#profile-root');
     if (!root) return;
-    const counts = getOrderCounts();
+    const counts = api.getOrderCounts();
     const orderStatuses = ['待付款', '待发货', '待收货', '待评价', '退款'];
     const name = state.loggedIn ? '张先生' : '登录 / 注册';
     const desc = state.loggedIn ? '138****6688 · 金牌采购商' : '登录后可同步订单与收藏';
@@ -987,12 +982,8 @@
     showToast(`已选：${state.selectedSpec}，${state.sheetQty}${p.unit}`);
   }
 
-  function getCartLineItems() {
-    return api.getCartLineItems();
-  }
-
   function openCartCheckout() {
-    const items = getCartLineItems();
+    const items = api.getCartLineItems();
     if (!items.length) {
       showToast('进货单是空的');
       return;
@@ -1057,7 +1048,7 @@
   }
 
   function renderCartCheckout() {
-    const items = getCartLineItems();
+    const items = api.getCartLineItems();
     if (!items.length) return;
     const total = items.reduce((sum, item) => sum + item.sub, 0);
     const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
@@ -1111,7 +1102,7 @@
 
   function submitOrder() {
     if (state.checkoutSource === 'cart') {
-      const items = getCartLineItems();
+      const items = api.getCartLineItems();
       if (!items.length) return;
       const total = items.reduce((sum, item) => sum + item.sub, 0);
       api.createOrder({ total, items: items.length });
@@ -1235,7 +1226,6 @@
   function renderShop(shopId) {
     const shop = api.getShop(shopId);
     if (!shop) return;
-    state.currentShopId = shopId;
     const products = api.getProductsByShop(shopId);
 
     $('#shop-content').innerHTML = `
@@ -1299,8 +1289,7 @@
     const header = $('#sub-header');
     header.innerHTML = `
       ${BACK_BTN_MINIMAL}
-      <span class="title" id="sub-title">详情</span>
-      <button class="header-action" id="sub-action" style="display:none"></button>`;
+      <span class="title" id="sub-title">详情</span>`;
     bindBackBtn();
   }
 
@@ -1562,13 +1551,6 @@
     const filterItem = e.target.closest('#list-filter-bar .filter-item[data-filter]');
     if (filterItem && activeScreen.id === 'screen-list') {
       applyListSort(filterItem.dataset.filter);
-      return;
-    }
-
-    const specBtn = e.target.closest('.spec-btn');
-    if (specBtn && !specBtn.dataset.spec) {
-      specBtn.parentElement.querySelectorAll('.spec-btn').forEach((b) => b.classList.remove('active'));
-      specBtn.classList.add('active');
     }
   }
 

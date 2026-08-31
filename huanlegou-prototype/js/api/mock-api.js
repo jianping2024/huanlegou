@@ -69,10 +69,6 @@ const MockApi = {
     return this.getProducts({ shopId });
   },
 
-  getCartItems() {
-    return AppStore.cart;
-  },
-
   getCartCount() {
     return AppStore.cart.length;
   },

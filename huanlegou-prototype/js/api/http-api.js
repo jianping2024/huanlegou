@@ -31,7 +31,6 @@ const HttpApi = {
   'getProduct',
   'getShop',
   'getProductsByShop',
-  'getCartItems',
   'getCartCount',
   'getCartLineItems',
   'addToCart',
