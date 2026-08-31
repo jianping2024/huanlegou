@@ -1,6 +1,9 @@
 /**
- * 首页 Banner — Swiper 封装（无限循环 / 自动播放 / 指示点）
+ * 首页 Banner — Swiper 封装（无限循环 / 自动播放 / 指示点 / 点击跳转）
  * 依赖 vendor/swiper/swiper-bundle.min.js
+ *
+ * 跳转模型对齐义乌购：每张 Banner 带 link（list / shop / product / toast），
+ * 由 mount 的 onNavigate 回调交给业务层处理。
  */
 (function () {
   'use strict';
@@ -10,7 +13,7 @@
 
   function slideHtml(b) {
     return `
-      <div class="swiper-slide banner-slide">
+      <div class="swiper-slide banner-slide" data-banner-id="${b.id}" role="button" tabindex="0">
         <div class="banner-bg" style="background-image:url('${b.image}')"></div>
         <div class="banner-overlay">
           <div class="banner-title">${b.title}</div>
@@ -19,11 +22,17 @@
       </div>`;
   }
 
-  function BannerSwiperInstance(wrap, banners) {
+  function BannerSwiperInstance(wrap, banners, options) {
     this.wrap = wrap;
     this.banners = banners;
+    this.onNavigate = typeof options?.onNavigate === 'function' ? options.onNavigate : null;
     this.swiper = null;
   }
+
+  BannerSwiperInstance.prototype.emitNavigate = function (banner) {
+    if (!banner || !this.onNavigate) return;
+    this.onNavigate(banner);
+  };
 
   BannerSwiperInstance.prototype.syncKenBurns = function () {
     this.wrap.querySelectorAll('.banner-slide').forEach((slide) => {
@@ -31,6 +40,13 @@
     });
     const active = this.wrap.querySelector('.swiper-slide-active.banner-slide');
     if (active) active.classList.add('is-active');
+  };
+
+  BannerSwiperInstance.prototype.bindSingleClick = function () {
+    const slide = this.wrap.querySelector('.banner-slide');
+    if (!slide) return;
+    this._onSingleClick = () => this.emitNavigate(this.banners[0]);
+    slide.addEventListener('click', this._onSingleClick);
   };
 
   BannerSwiperInstance.prototype.mount = function () {
@@ -48,6 +64,7 @@
           <div class="banner-dots"><span class="active"></span></div>
         </div>`;
       this.wrap.querySelector('.banner-slide')?.classList.add('is-active');
+      this.bindSingleClick();
       return;
     }
 
@@ -97,11 +114,21 @@
         touchStart: () => this.wrap.classList.add('is-dragging'),
         touchEnd: () => this.wrap.classList.remove('is-dragging'),
         transitionEnd: () => this.syncKenBurns(),
+        // Swiper 在滑动后会抑制 click；只有真正点击才触发
+        click: (swiper, event) => {
+          if (event.target.closest('.banner-dots, .banner-dot')) return;
+          const banner = this.banners[swiper.realIndex];
+          this.emitNavigate(banner);
+        },
       },
     });
   };
 
   BannerSwiperInstance.prototype.destroy = function () {
+    if (this._onSingleClick) {
+      this.wrap.querySelector('.banner-slide')?.removeEventListener('click', this._onSingleClick);
+      this._onSingleClick = null;
+    }
     if (this.swiper) {
       this.swiper.destroy(true, true);
       this.swiper = null;
@@ -112,14 +139,14 @@
 
   window.BannerSwiper = {
     _active: null,
-    mount(wrap, banners) {
+    mount(wrap, banners, options) {
       if (!wrap) return null;
       if (typeof Swiper === 'undefined') {
         console.error('[BannerSwiper] Swiper 未加载，请检查 vendor/swiper/swiper-bundle.min.js');
         return null;
       }
       if (this._active) this._active.destroy();
-      const inst = new BannerSwiperInstance(wrap, banners);
+      const inst = new BannerSwiperInstance(wrap, banners, options);
       inst.mount();
       this._active = inst;
       return inst;

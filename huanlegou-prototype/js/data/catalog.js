@@ -8,18 +8,22 @@ const Catalog = {
       title: '2026春季小商品采购节',
       subtitle: '源头好货 · 一件起批',
       image: A('banners/b1.jpg'),
+      // 对齐义乌购：运营 Banner 配跳转目标（list / shop / product / toast）
+      link: { type: 'list', title: '春季采购节', categoryId: 'c1' },
     },
     {
       id: 2,
       title: '义乌市场源头直供',
       subtitle: '800万采购商的选择',
       image: A('banners/b2.jpg'),
+      link: { type: 'shop', shopId: 's1' },
     },
     {
       id: 3,
       title: '360°全景看店',
       subtitle: '实体市场 · 诚信保障',
       image: A('banners/b3.jpg'),
+      link: { type: 'product', productId: 'p1' },
     },
   ],
 

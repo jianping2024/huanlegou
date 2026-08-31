@@ -373,6 +373,10 @@ body {
   user-select: none;
 }
 
+.banner-slide {
+  cursor: pointer;
+}
+
 .banner-swiper-inner {
   height: 100%;
   width: 100%;

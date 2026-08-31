@@ -321,8 +321,37 @@
       </article>`;
   }
 
+  function openBannerLink(banner) {
+    const link = banner?.link;
+    if (!link?.type) {
+      showToast(`${banner?.title || '活动'} · 静态演示`);
+      return;
+    }
+
+    if (link.type === 'list') {
+      pushScreen('screen-list', () => renderList(link.title || banner.title, link.categoryId));
+      return;
+    }
+    if (link.type === 'shop' && link.shopId) {
+      pushScreen('screen-shop', () => renderShop(link.shopId), 'immersive');
+      return;
+    }
+    if (link.type === 'product' && link.productId) {
+      pushScreen('screen-detail', () => renderDetail(link.productId), 'immersive');
+      return;
+    }
+    if (link.type === 'toast') {
+      showToast(link.msg || `${banner.title} · 静态演示`);
+      return;
+    }
+
+    showToast(`${banner.title} · 静态演示`);
+  }
+
   function renderBanners() {
-    BannerSwiper.mount($('#banner-swiper'), api.getBanners());
+    BannerSwiper.mount($('#banner-swiper'), api.getBanners(), {
+      onNavigate: openBannerLink,
+    });
   }
 
   function renderQuickEntries() {
